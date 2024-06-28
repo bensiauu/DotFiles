@@ -29,9 +29,9 @@ return {
       ensure_installed = {
         "html",
         "cssls",
-        "tailwindcss",
         "lua_ls",
-        "pyright",
+        "ruff",
+        "vtsls",
       },
     })
 
@@ -39,9 +39,7 @@ return {
       ensure_installed = {
         "prettier", -- prettier formatter
         "stylua", -- lua formatter
-        "isort", -- python formatter
-        "black", -- python formatter
-        "pylint",
+        "ruff",
         "eslint_d",
       },
     })

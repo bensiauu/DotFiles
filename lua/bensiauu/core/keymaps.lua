@@ -3,7 +3,7 @@ vim.g.maplocalleader = ","
 
 
 local keymap = vim.keymap
-keymap.set("i", "jk", '<ESC>', {desc="Exit insert mode with jj"})
+keymap.set("i", "jk", '<ESC>', {desc="Exit insert mode with jk"})
 
 -- open file_browser with the path of the current buffer
 vim.keymap.set("n", "<space>fb", ":Telescope file_browser path=%:p:h select_buffer=true<CR>")
@@ -22,4 +22,5 @@ vim.api.nvim_set_keymap('n', '<leader>nt', ':NvimTreeToggle<CR>', { noremap = tr
 
 -- vim- fugitive key mappings
 vim.api.nvim_set_keymap('n', '<leader>gt', '<cmd>G<CR>', {noremap = true, silent = true})
+
 
