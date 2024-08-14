@@ -1,0 +1,12 @@
+color = ''
+project-name = 'default'
+[default]
+account_id = 'acct_1PnGchFwdMAxY59L'
+device_name = 'bb118-200-106-62.singnet.com.sg'
+live_mode_api_key = 'rk_live_***********************************************************************************************mbNV'
+live_mode_key_expires_at = '2024-11-11'
+live_mode_pub_key = 'pk_live_51PnGchFwdMAxY59LDUx3CyfCRFxODSvb5cDBCgtRdJhfu3lhpCAs4pE0mL6AcTnGco3WWr3635T366uQKxXttw9Y00m8zXFgui'
+test_mode_api_key = 'rk_test_51PnGchFwdMAxY59LHjrzYLeGCMYFcFLO52EitXcx5dzDgUQkvyz4GdNWnKCfl9PR9GSjJOMdxhdIQLoxceG9thvP00yOdi1jBm'
+test_mode_key_expires_at = '2024-11-11'
+test_mode_pub_key = 'pk_test_51PnGchFwdMAxY59LAqSexBrszDgpDY7q6pthkQnT3MBVQthWYNjhNunX1OsTURmlC2gs3hzkNNtJrxfOp7XsCNTV00CJJiWFlx'
+
