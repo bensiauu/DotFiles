@@ -1,0 +1,29 @@
+# Python configuration using pyright and ruff for linting
+[[language]]
+name = "python"
+formatter = { command = "ruff" }
+
+# JavaScript/TypeScript using tsserver
+[[language]]
+name = "javascript"
+roots = ["package.json", "tsconfig.json", ".git"]
+language-servers = [ "typescript-language-server" ]
+
+[[language]]
+name = "typescript"
+roots = ["package.json", "tsconfig.json", ".git"]
+language-servers = [ "typescript-language-server" ]
+
+
+# HTML, CSS, and JSON
+[[language]]
+name = "html"
+language-servers = [ "vscode-html-languageserver" ]
+
+[[language]]
+name = "css"
+language-servers = [ "vscode-css-languageserver", ]
+
+[[language]]
+name = "json"
+language-servers = [ "vscode-json-languageserver" ]
