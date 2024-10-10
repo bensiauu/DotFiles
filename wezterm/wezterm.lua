@@ -77,6 +77,11 @@ return {
 				end),
 			}),
 		},
+		{
+      key = 'Enter',   -- Enter key
+      mods = 'ALT',    -- Alt modifier
+      action = wezterm.action.DisableDefaultAssignment,  -- Disable Alt-Enter
+    },
 	},
 	-- Appearance settings
 	--
