@@ -53,18 +53,18 @@ return {
 		left = 10,
 		right = 10,
 		top = 10,
-		bottom = 10,
 	},
 
 	-- Key bindings
+	leader = { key = "Space", mods = "CTRL" },
 	keys = {
-		{ key = "t", mods = "CTRL|SHIFT", action = wezterm.action({ SpawnTab = "DefaultDomain" }) },
-		{ key = "w", mods = "CTRL|SHIFT", action = wezterm.action({ CloseCurrentTab = { confirm = true } }) },
-		{ key = "LeftArrow", mods = "CTRL|SHIFT", action = wezterm.action({ ActivateTabRelative = -1 }) },
-		{ key = "RightArrow", mods = "CTRL|SHIFT", action = wezterm.action({ ActivateTabRelative = 1 }) },
+		{ key = "t", mods = "LEADER", action = wezterm.action({ SpawnTab = "DefaultDomain" }) },
+		{ key = "w", mods = "LEADER", action = wezterm.action({ CloseCurrentTab = { confirm = true } }) },
+		{ key = "LeftArrow", mods = "LEADER", action = wezterm.action({ ActivateTabRelative = -1 }) },
+		{ key = "RightArrow", mods = "LEADER", action = wezterm.action({ ActivateTabRelative = 1 }) },
 		{
 			key = "E",
-			mods = "CTRL|SHIFT",
+			mods = "LEADER",
 			action = wezterm.action.PromptInputLine({
 				description = "Enter new name for tab",
 				action = wezterm.action_callback(function(window, pane, line)
@@ -78,15 +78,78 @@ return {
 			}),
 		},
 		{
-      key = 'Enter',   -- Enter key
-      mods = 'ALT',    -- Alt modifier
-      action = wezterm.action.DisableDefaultAssignment,  -- Disable Alt-Enter
-    },
+			key = "Enter", -- Enter key
+			mods = "ALT", -- Alt modifier
+			action = wezterm.action.DisableDefaultAssignment, -- Disable Alt-Enter
+		},
+		{
+			key = "v",
+			mods = "LEADER",
+			action = wezterm.action.SplitHorizontal({ domain = "CurrentPaneDomain" }),
+		},
+		{
+			key = "V",
+			mods = "LEADER",
+			action = wezterm.action.SplitHorizontal({ domain = "CurrentPaneDomain" }),
+		},
+		{
+			key = "S",
+			mods = "LEADER",
+			action = wezterm.action.SplitVertical({ domain = "CurrentPaneDomain" }),
+		},
+		{
+			key = "s",
+			mods = "LEADER",
+			action = wezterm.action.SplitVertical({ domain = "CurrentPaneDomain" }),
+		},
+
+		-- Move between panes with Ctrl+Shift+h/j/k/l
+		{
+			key = "h",
+			mods = "LEADER",
+			action = wezterm.action.ActivatePaneDirection("Left"),
+		},
+		{
+			key = "j",
+			mods = "LEADER",
+			action = wezterm.action.ActivatePaneDirection("Down"),
+		},
+		{
+			key = "k",
+			mods = "LEADER",
+			action = wezterm.action.ActivatePaneDirection("Up"),
+		},
+		{
+			key = "l",
+			mods = "LEADER",
+			action = wezterm.action.ActivatePaneDirection("Right"),
+		},
+		{
+			key = "b",
+			mods = "LEADER",
+			action = wezterm.action.ActivateKeyTable({
+				name = "close_pane",
+				one_shot = false, -- You can repeat other keys in this table, but 'one_shot' means we exit the table after one action.
+			}),
+		},
+	},
+
+	key_tables = {
+		close_pane = {
+			{
+				key = "k",
+				action = wezterm.action.CloseCurrentPane({ confirm = false }),
+			},
+			-- Optionally, add a way to exit the key table without doing anything
+			{
+				key = "Escape",
+				action = wezterm.action.PopKeyTable,
+			},
+		},
 	},
 	-- Appearance settings
 	--
 	window_decorations = "RESIZE",
-	window_background_opacity = 0.9,
 
 	-- Misc settings
 	enable_scroll_bar = true,
