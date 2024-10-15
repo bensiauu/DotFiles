@@ -59,11 +59,15 @@ return {
 	leader = { key = "Space", mods = "CTRL" },
 	keys = {
 		{ key = "t", mods = "LEADER", action = wezterm.action({ SpawnTab = "DefaultDomain" }) },
-		{ key = "w", mods = "LEADER", action = wezterm.action({ CloseCurrentTab = { confirm = true } }) },
+		{
+			key = "w",
+			mods = "CTRL|SHIFT",
+			action = wezterm.action.CloseCurrentPane({ confirm = false }),
+		},
 		{ key = "LeftArrow", mods = "LEADER", action = wezterm.action({ ActivateTabRelative = -1 }) },
 		{ key = "RightArrow", mods = "LEADER", action = wezterm.action({ ActivateTabRelative = 1 }) },
 		{
-			key = "E",
+			key = "e",
 			mods = "LEADER",
 			action = wezterm.action.PromptInputLine({
 				description = "Enter new name for tab",
