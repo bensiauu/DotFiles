@@ -4,3 +4,5 @@ end
 
 set -x PATH $PATH $HOME/go/bin
 set -x CXXFLAGS "-std=c++11"
+set -x PATH $PATH $HOME/flutter/bin/
+set -x PATH /opt/homebrew/opt/ruby/bin $PATH 

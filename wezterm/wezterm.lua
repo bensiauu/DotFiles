@@ -3,8 +3,8 @@ local mux = wezterm.mux
 
 return {
 	-- Font configuration
-	font = wezterm.font("JetBrainsMono Nerd Font", { weight = "Regular", italic = false }),
-	font_size = 12.0,
+	font = wezterm.font("SF Mono", { weight = "Regular", italic = false }),
+	font_size = 16.0,
 
 	-- Maximize screen on start
 	wezterm.on("gui-startup", function()
@@ -56,12 +56,17 @@ return {
 	},
 
 	-- Key bindings
-	leader = { key = "Space", mods = "CTRL" },
+	leader = {
+		key = " ",
+		mods = "CTRL",
+		timeout_milliseconds = 1000,
+	},
+
 	keys = {
 		{ key = "t", mods = "LEADER", action = wezterm.action({ SpawnTab = "DefaultDomain" }) },
 		{
 			key = "w",
-			mods = "CTRL|SHIFT",
+			mods = "LEADER",
 			action = wezterm.action.CloseCurrentPane({ confirm = false }),
 		},
 		{ key = "LeftArrow", mods = "LEADER", action = wezterm.action({ ActivateTabRelative = -1 }) },
@@ -80,11 +85,6 @@ return {
 					end
 				end),
 			}),
-		},
-		{
-			key = "Enter", -- Enter key
-			mods = "ALT", -- Alt modifier
-			action = wezterm.action.DisableDefaultAssignment, -- Disable Alt-Enter
 		},
 		{
 			key = "v",
@@ -129,28 +129,12 @@ return {
 			action = wezterm.action.ActivatePaneDirection("Right"),
 		},
 		{
-			key = "b",
+			key = "w",
 			mods = "LEADER",
-			action = wezterm.action.ActivateKeyTable({
-				name = "close_pane",
-				one_shot = false, -- You can repeat other keys in this table, but 'one_shot' means we exit the table after one action.
-			}),
+			action = wezterm.action.CloseCurrentPane({ confirm = false }),
 		},
 	},
 
-	key_tables = {
-		close_pane = {
-			{
-				key = "k",
-				action = wezterm.action.CloseCurrentPane({ confirm = false }),
-			},
-			-- Optionally, add a way to exit the key table without doing anything
-			{
-				key = "Escape",
-				action = wezterm.action.PopKeyTable,
-			},
-		},
-	},
 	-- Appearance settings
 	--
 	window_decorations = "RESIZE",
