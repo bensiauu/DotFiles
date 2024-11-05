@@ -1,0 +1,48 @@
+# Character prompt symbol
+[character]
+success_symbol = "[➜](bold green) "     # Symbol for successful commands with green color
+error_symbol = "[✗](bold red) " 
+
+
+# Git branch and status
+[git_branch]
+format = " [$branch]($style)"
+style = "bold purple"
+
+[git_status]
+conflicted = "🚧 "
+ahead = "⇡${count} "
+behind = "⇣${count} "
+diverged = "⇕⇡${ahead_count}⇣${behind_count} "
+untracked = "✚ "
+stashed = "📦 "
+modified = "✏ "
+deleted = "🗑 "
+renamed = "» "
+format = "[$all_status$ahead_behind]($style)"
+style = "bold yellow"
+
+# Battery display (will show only if battery is below a certain threshold by default)
+[battery]
+full_symbol = "🔋"
+charging_symbol = "⚡"
+discharging_symbol = "🔋"
+disabled = false  # If set to true, will hide the battery module entirely
+
+# Programming languages
+[nodejs]
+format = "via 🌐 $version "
+disabled = false
+
+[python]
+format = "via 🐍 $version "
+disabled = false
+
+# Directory path truncation
+[directory]
+truncation_length = 3
+format = "📂 [$path]($style)"
+
+[aws]
+disabled = true
+
