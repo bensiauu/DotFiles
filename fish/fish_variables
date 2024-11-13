@@ -1,5 +1,7 @@
 # This file contains fish universal variable definitions.
 # VERSION: 3.0
+SETUVAR --export --path PATH:/opt/homebrew/bin\x1e/opt/homebrew/opt/ruby/bin\x1e/opt/homebrew/opt/ruby/bin\x1e/opt/homebrew/opt/ruby/bin\x1e/opt/homebrew/opt/ruby/bin\x1e/opt/homebrew/opt/ruby/bin\x1e/opt/homebrew/opt/ruby/bin\x1e/Users/bensiau/\x2ecargo/bin\x1e/opt/homebrew/bin\x1e/usr/local/bin\x1e/System/Cryptexes/App/usr/bin\x1e/usr/bin\x1e/bin\x1e/usr/sbin\x1e/sbin\x1e/var/run/com\x2eapple\x2esecurity\x2ecryptexd/codex\x2esystem/bootstrap/usr/local/bin\x1e/var/run/com\x2eapple\x2esecurity\x2ecryptexd/codex\x2esystem/bootstrap/usr/bin\x1e/var/run/com\x2eapple\x2esecurity\x2ecryptexd/codex\x2esystem/bootstrap/usr/appleinternal/bin\x1e/Library/Apple/usr/bin\x1e/usr/local/go/bin\x1e/Users/bensiau/go/bin\x1e/Users/bensiau/flutter/bin/\x1e/Users/bensiau/\x2eemacs\x2ed/bin/\x1e/Users/bensiau/go/bin\x1e/Users/bensiau/flutter/bin/\x1e/Users/bensiau/\x2eemacs\x2ed/bin/\x1e/Users/bensiau/go/bin\x1e/Users/bensiau/flutter/bin/\x1e/Users/bensiau/\x2eemacs\x2ed/bin/\x1e/Users/bensiau/go/bin\x1e/Users/bensiau/flutter/bin/\x1e/Users/bensiau/\x2eemacs\x2ed/bin/\x1e/Users/bensiau/go/bin\x1e/Users/bensiau/flutter/bin/\x1e/Users/bensiau/\x2econfig/emacs/bin\x1e/Users/bensiau/go/bin\x1e/Users/bensiau/flutter/bin/\x1e/Users/bensiau/\x2econfig/emacs/bin
+SETUVAR --export PYENV_ROOT:/Users/bensiau/\x2epyenv
 SETUVAR ZO_CMD:zo
 SETUVAR Z_CMD:z
 SETUVAR Z_DATA:/Users/bensiau/\x2elocal/share/z/data
@@ -40,4 +42,4 @@ SETUVAR fish_pager_color_description:yellow\x1e\x2di
 SETUVAR fish_pager_color_prefix:normal\x1e\x2d\x2dbold\x1e\x2d\x2dunderline
 SETUVAR fish_pager_color_progress:brwhite\x1e\x2d\x2dbackground\x3dcyan
 SETUVAR fish_pager_color_selected_background:\x2dr
-SETUVAR fish_user_paths:/opt/homebrew/bin
+SETUVAR fish_user_paths:/usr/local/opt/grep/bin\x1e/Users/bensiau/\x2epyenv/bin\x1e/opt/homebrew/bin\x1e/opt/homebrew/opt/python\x403\x2e12/bin

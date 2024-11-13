@@ -6,6 +6,11 @@ return {
 	font = wezterm.font("SF Mono", { weight = "Regular", italic = false }),
 	font_size = 16.0,
 
+	-- transparency
+	window_background_opacity = 0.9,
+	text_background_opacity = 1.0,
+	macos_window_background_blur = 15,
+
 	-- Maximize screen on start
 	wezterm.on("gui-startup", function()
 		local tab, pane, window = mux.spawn_window({})

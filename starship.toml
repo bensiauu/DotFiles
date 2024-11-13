@@ -32,7 +32,7 @@ disabled = false  # If set to true, will hide the battery module entirely
 # Programming languages
 [nodejs]
 format = "via 🌐 $version "
-disabled = false
+disabled = true
 
 [python]
 format = "via 🐍 $version "
@@ -45,4 +45,6 @@ format = "📂 [$path]($style)"
 
 [aws]
 disabled = true
+
+
 
