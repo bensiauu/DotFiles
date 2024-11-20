@@ -53,3 +53,4 @@
 (package! dap-mode)
 (package! vertico-posframe)
 (package! org-modern)
+(package! org-download)

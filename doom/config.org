@@ -20,7 +20,7 @@
 #+end_src
 *** Theme
 #+begin_src emacs-lisp
-(setq doom-theme 'modus-operandi-tinted)
+(setq doom-theme 'modus-vivendi-tinted)
 #+end_src
 *** Transparency
 #+begin_src emacs-lisp
@@ -48,6 +48,11 @@
   (vertico-posframe-mode 1))
 
 #+end_src
+*** Disable Title Bar
+#+begin_src emacs-lisp
+(add-to-list 'default-frame-alist '(undecorated . t))
+
+#+end_src
 ** Org
 #+begin_src  emacs-lisp
 (setq org-directory "~/org/")
@@ -57,12 +62,6 @@
        `(("i" "Inbox" entry  (file "agendas/inbox.org")
         ,(concat "* TODO %?\n"
                  "/Entered on/ %U"))))
-(defun org-capture-inbox ()
-     (interactive)
-     (call-interactively 'org-store-link)
-     (org-capture nil "i"))
-
-(define-key global-map (kbd "C-c i") 'org-capture-inbox)
 ;; Org-roam setup in Doom Emacs
 (use-package! org-roam
   :custom
@@ -81,7 +80,34 @@
   (setq org-modern-star ["◉" "○" "✸" "✿"]) ;; Customize bullet styles
 
 #+end_src
+*** Image paste
+#+begin_src emacs-lisp
 
+(use-package! org-download
+    :after org
+    :defer nil
+    :custom
+    (org-download-method 'directory)
+    (org-download-image-dir "~/org/attachments")
+    (org-download-heading-lvl nil)
+    (org-download-timestamp "%Y%m%d-%H%M%S_")
+    (org-image-actual-width 300)
+    (org-download-screenshot-method "/opt/homebrew/bin/pngpaste %s")
+    :config
+    (require 'org-download))
+
+
+#+end_src
+*** Capture to inbox
+#+begin_src emacs-lisp
+(defun org-capture-inbox ()
+     (interactive)
+     (call-interactively 'org-store-link)
+     (org-capture nil "i"))
+
+(map! :desc "Org Capture Inbox" "C-c i" #'org-capture-inbox)
+
+#+end_src
 
 ** Packages
 #+begin_src emacs-lisp
@@ -135,7 +161,7 @@
 
 (map! :leader
       :prefix "v"
-      :desc "Run vterm in project" "t" #'projectile-run-vterm)
+      :desc "Run vterm in project" "t" #'vterm)
 #+end_src
 
 ** LSP
