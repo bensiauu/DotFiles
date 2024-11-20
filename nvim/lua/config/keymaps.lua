@@ -15,7 +15,8 @@ vim.api.nvim_set_keymap("n", "<leader>wl", "<C-w>l", { noremap = true, silent = 
 -- buffers
 vim.api.nvim_set_keymap("n", "<leader>bp", ":bprev<CR>", { noremap = true, silent = true, desc = "Buffer Previous" })
 vim.api.nvim_set_keymap("n", "<leader>bn", ":bnext<CR>", { noremap = true, silent = true, desc = "Buffer Next" })
-vim.api.nvim_set_keymap("n", "<leader>bk", ":bdelete<CR>", { noremap = true, silent = true, desc = "Buffer Kill" })
+vim.api.nvim_set_keymap("n", "<leader>[b", ":bprev<CR>", { noremap = true, silent = true, desc = "Buffer Previous" })
+vim.api.nvim_set_keymap("n", "<leader>]b", ":bnext<CR>", { noremap = true, silent = true, desc = "Buffer Next" })
 
 -- markdown jump heading
 vim.keymap.set("n", "gk", function()

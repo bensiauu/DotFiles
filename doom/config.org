@@ -1,4 +1,5 @@
 #+title: EMACS Config
+#+STARTUP: indent show2levels
 
 
 * Config
@@ -19,13 +20,13 @@
 #+end_src
 *** Theme
 #+begin_src emacs-lisp
-(setq doom-theme 'doom-dracula)
+(setq doom-theme 'modus-operandi-tinted)
 #+end_src
 *** Transparency
 #+begin_src emacs-lisp
 
-(set-frame-parameter (selected-frame) 'alpha '(90 . 90))
-(add-to-list 'default-frame-alist '(alpha . (90 . 90)))
+;; (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
+;; (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
 #+end_src
 *** Line numbers
 #+begin_src  emacs-lisp
@@ -33,11 +34,35 @@
 (setq display-line-numbers-type t)
 (setq display-line-numbers-type 'relative)
 #+end_src
+*** Floating window
+#+begin_src emacs-lisp
+(use-package! vertico-posframe
+  :after vertico
+  :config
+  (setq vertico-posframe-poshandler #'posframe-poshandler-frame-center
+        vertico-posframe-border-width 3
+        vertico-posframe-width 100
+        vertico-posframe-height 20
+        vertico-posframe-parameters '((left-fringe . 10)
+                                       (right-fringe . 10)))
+  (vertico-posframe-mode 1))
+
+#+end_src
 ** Org
 #+begin_src  emacs-lisp
 (setq org-directory "~/org/")
 
 (setq org-agenda-files '("~/org/agendas"))
+(setq org-capture-templates
+       `(("i" "Inbox" entry  (file "agendas/inbox.org")
+        ,(concat "* TODO %?\n"
+                 "/Entered on/ %U"))))
+(defun org-capture-inbox ()
+     (interactive)
+     (call-interactively 'org-store-link)
+     (org-capture nil "i"))
+
+(define-key global-map (kbd "C-c i") 'org-capture-inbox)
 ;; Org-roam setup in Doom Emacs
 (use-package! org-roam
   :custom
@@ -52,7 +77,11 @@
   (org-roam-db-autosync-mode)
   ;; Load org-roam-protocol if needed
   (require 'org-roam-protocol)
+  (with-eval-after-load 'org (global-org-modern-mode))
+  (setq org-modern-star ["◉" "○" "✸" "✿"]) ;; Customize bullet styles
+
 #+end_src
+
 
 ** Packages
 #+begin_src emacs-lisp
@@ -89,6 +118,10 @@
 ;;
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
+(after! dired
+  (define-key dired-mode-map (kbd "h") #'dired-up-directory)   ;; Move up a directory
+  (define-key dired-mode-map (kbd "k") #'dired-previous-line)) ;; Move to the previous line
+
 #+end_src
 
 ** VTerm
@@ -96,7 +129,9 @@
 
 (after! vterm
   (setq vterm-shell "fish"))
-
+(add-hook 'vterm-mode-hook
+          (lambda ()
+            (evil-local-set-key 'insert (kbd "jk") 'evil-normal-state)))
 
 (map! :leader
       :prefix "v"
@@ -107,42 +142,79 @@
 *** Angular
 #+begin_src emacs-lisp
 
-(after! eglot
-  ;; Helper function to find the nearest node_modules path
-  (defun my-find-node-modules-path ()
-    "Find the nearest node_modules directory from the current file."
-    (let ((root (locate-dominating-file default-directory "node_modules")))
-      (when root
-        (expand-file-name "node_modules" root))))
-  (add-to-list 'eglot-server-programs
-               `((typescript-mode tsx-mode)
-                 . (lambda ()
-                     (let ((node-modules-path (my-find-node-modules-path)))
-                       (when node-modules-path
-                         `("node"
-                           ,(expand-file-name "@angular/language-server" node-modules-path)
-                           "--ngProbeLocations" ,node-modules-path
-                           "--tsProbeLocations" ,node-modules-path
-                           "--stdio"))))))
+;; (after! eglot
+;;   ;; Helper function to find the nearest node_modules path
+;;   (defun my-find-node-modules-path ()
+;;     "Find the nearest node_modules directory from the current file."
+;;     (let ((root (locate-dominating-file default-directory "node_modules")))
+;;       (when root
+;;         (expand-file-name "node_modules" root))))
+;;   (add-to-list 'eglot-server-programs
+;;                `((typescript-mode tsx-mode)
+;;                  . (lambda ()
+;;                      (let ((node-modules-path (my-find-node-modules-path)))
+;;                        (when node-modules-path
+;;                          `("node"
+;;                            ,(expand-file-name "@angular/language-server" node-modules-path)
+;;                            "--ngProbeLocations" ,node-modules-path
+;;                            "--tsProbeLocations" ,node-modules-path
+;;                            "--stdio"))))))
 
-  ;; Enable eglot for Angular projects
-  (defun check-if-angular ()
-    "Enable eglot if angular.json is present in the project root."
-    (when (and (projectile-project-root)
-               (file-exists-p (expand-file-name "angular.json" (projectile-project-root))))
-      (eglot-ensure)))
+;;   ;; Enable eglot for Angular projects
+;;   (defun check-if-angular ()
+;;     "Enable eglot if angular.json is present in the project root."
+;;     (when (and (projectile-project-root)
+;;                (file-exists-p (expand-file-name "angular.json" (projectile-project-root))))
+;;       (eglot-ensure)))
 
-  ;; Hook to start eglot in Angular projects
-  (add-hook 'typescript-mode-hook 'check-if-angular)
-  (add-hook 'tsx-mode-hook 'check-if-angular))
+;;   ;; Hook to start eglot in Angular projects
+;;   (add-hook 'typescript-mode-hook 'check-if-angular)
+;;   (add-hook 'tsx-mode-hook 'check-if-angular))
+#+end_src
+*** General
+#+begin_src emacs-lisp
+
+
 #+end_src
 *** Python
 #+begin_src emacs-lisp
-(use-package! eglot
-  :hook (python-mode . eglot-ensure)
+;; (use-package! eglot
+;;   :hook (python-mode . eglot-ensure)
+;;   :config
+;;   ;; Configure eglot to use Pyright
+;;   (add-to-list 'eglot-server-programs '(python-mode . ("pyright-langserver" "--stdio"))))
+
+
+
+#+end_src
+*** Debugger
+#+begin_src emacs-lisp
+(use-package! dap-mode
   :config
-  ;; Configure eglot to use Pyright
-  (add-to-list 'eglot-server-programs '(python-mode . ("pyright-langserver" "--stdio"))))
+  (dap-auto-configure-mode t)
+  (require 'dap-python)   ;; For Python support
+  (require 'dap-go)       ;; For Go support
+  (dap-ui-mode 1)
+  (dap-tooltip-mode 1)
+  (tooltip-mode 1)
+  (dap-ui-controls-mode 1))
+
+
+(after! dap-mode
+  (setq dap-go-dlv-path "/Users/bensiau/go/bin/dlv")
+  (setq dap-python-debugger 'debugpy)
+  (setq dap-python-executable "python3"))
+
+(map! :leader
+      (:prefix ("d" . "debug")
+       :desc "Start DAP Debugging" "d" #'dap-debug
+       :desc "Toggle Breakpoint" "b" #'dap-breakpoint-toggle
+       :desc "Continue" "c" #'dap-continue
+       :desc "Step In" "i" #'dap-step-in
+       :desc "Step Out" "o" #'dap-step-out
+       :desc "Next" "n" #'dap-next))
+
+
 
 #+end_src
 ** Tree-sitter

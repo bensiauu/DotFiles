@@ -5,7 +5,6 @@
 
 set -g fish_greeting
 set -Ux PYENV_ROOT $HOME/.pyenv
-set -U fish_user_paths /usr/local/opt/grep/bin $fish_user_paths
 set -U fish_user_paths $PYENV_ROOT/bin $fish_user_paths
 pyenv init - | source
 starship init fish | source

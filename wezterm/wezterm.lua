@@ -10,6 +10,7 @@ return {
 	window_background_opacity = 0.9,
 	text_background_opacity = 1.0,
 	macos_window_background_blur = 15,
+	max_fps = 120,
 
 	-- Maximize screen on start
 	wezterm.on("gui-startup", function()
