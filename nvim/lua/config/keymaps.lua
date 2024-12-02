@@ -45,6 +45,25 @@ vim.keymap.set("n", "gj", function()
   vim.cmd("nohlsearch")
 end, { desc = "Go to next markdown header" })
 
+vim.keymap.set(
+  "n",
+  "<S-Tab>",
+  ":lua require('custom.markdown_utils').toggle_folds()<CR>",
+  { noremap = true, silent = true }
+)
+
+vim.keymap.set(
+  "n",
+  "<Tab>",
+  ":lua require('custom.markdown_utils').cycle_fold_level()<CR>",
+  { noremap = true, silent = true }
+)
+vim.keymap.set(
+  "n",
+  "<C-n>",
+  ":lua require('custom.markdown_utils').create_same_level_heading()<CR>",
+  { noremap = true, silent = true }
+)
 -- Open floating terminal in Fish shell
 vim.api.nvim_set_keymap(
   "n",

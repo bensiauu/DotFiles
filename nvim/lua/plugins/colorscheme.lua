@@ -5,15 +5,22 @@ return {
     priority = 1000,
     config = function()
       require("catppuccin").setup({
-        transparent_background = true,
-        term_colors = true,
+        -- transparent_background = true,
+        -- term_colors = true,
       })
+    end,
+  },
+  {
+    "navarasu/onedark.nvim",
+    name = "onedark",
+    config = function()
+      require("onedark").setup({})
     end,
   },
   {
     "LazyVim/LazyVim",
     opts = {
-      colorscheme = "catppuccin-macchiato",
+      colorscheme = "onedark",
     },
   },
 }
