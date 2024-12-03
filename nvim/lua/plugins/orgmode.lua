@@ -6,11 +6,11 @@ return {
     config = function()
       -- Setup orgmode
       require("orgmode").setup({
-        org_agenda_files = "~/Documents/Ben_Ideaverse/org/agendas/*",
-        org_default_notes_file = "~/Documents/Ben_Ideaverse/org/agendas/inbox.org",
+        org_agenda_files = "/Users/bensiau/Library/Mobile Documents/com~apple~CloudDocs/org/agendas/*",
+        org_default_notes_file = "/Users/bensiau/Library/Mobile Documents/com~apple~CloudDocs/org/agendas/inbox.org",
         mappings = {
           org = {
-            org_toggle_checkbox = "<leader>otc", -- Map your preferred keybinding
+            org_toggle_checkbox = "<leader>oc",
           },
         },
       })
@@ -35,11 +35,11 @@ return {
     },
     config = function()
       require("org-roam").setup({
-        directory = "~/Documents/Ben_Ideaverse/org/roam/",
+        directory = "/Users/bensiau/Library/Mobile Documents/com~apple~CloudDocs/org/org/roam/",
         -- optional
         org_files = {
-          "~/Documents/Ben_Ideaverse/org/projects/*.org",
-          "~/Documents/Ben_Ideaverse/org/agendas/*.org",
+          "/Users/bensiau/Library/Mobile Documents/com~apple~CloudDocs/org/projects/*.org",
+          "/Users/bensiau/Library/Mobile Documents/com~apple~CloudDocs/org/agendas/*.org",
         },
       })
     end,

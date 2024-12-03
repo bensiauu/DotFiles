@@ -14,6 +14,23 @@ return {
           path = "~/Documents/Ben_Ideaverse",
         },
       },
+      note_id_func = function(title)
+        -- Initialize the suffix for the title.
+        local suffix = ""
+        local datetime = tostring(os.date("%Y-%m-%d %I%M%p")):lower()
+        if title ~= nil then
+          -- If a title is provided, transform it into a valid file name.
+          suffix = title:gsub(" ", "-"):gsub("[^A-Za-z0-9-]", ""):lower()
+        else
+          -- If the title is nil, add 4 random uppercase letters to the suffix.
+          for _ = 1, 4 do
+            suffix = suffix .. string.char(math.random(65, 90))
+          end
+        end
+
+        -- Combine prefix, timestamp, and suffix.
+        return datetime .. "-" .. suffix
+      end,
       templates = {
         folder = "Templates",
         date_format = "%Y-%m-%d",

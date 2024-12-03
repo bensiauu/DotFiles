@@ -30,3 +30,6 @@ set -x PATH /opt/homebrew/opt/postgresql@15/bin $PATH
 
 # Optionally, set other environment variables like CXXFLAGS
 set -x CXXFLAGS "-std=c++11"
+
+# alias for nvim
+alias v="nvim"
