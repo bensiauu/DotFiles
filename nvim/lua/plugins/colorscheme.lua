@@ -5,8 +5,8 @@ return {
     priority = 1000,
     config = function()
       require("catppuccin").setup({
-        -- transparent_background = true,
-        -- term_colors = true,
+        transparent_background = true,
+        term_colors = true,
       })
     end,
   },
@@ -20,7 +20,7 @@ return {
   {
     "LazyVim/LazyVim",
     opts = {
-      colorscheme = "onedark",
+      colorscheme = "catppuccin-frappe",
     },
   },
 }

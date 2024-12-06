@@ -24,24 +24,4 @@ return {
       require("org-bullets").setup()
     end,
   },
-  {
-    "chipsenkbeil/org-roam.nvim",
-    tag = "0.1.1",
-    dependencies = {
-      {
-        "nvim-orgmode/orgmode",
-        tag = "0.3.7",
-      },
-    },
-    config = function()
-      require("org-roam").setup({
-        directory = "/Users/bensiau/Library/Mobile Documents/com~apple~CloudDocs/org/org/roam/",
-        -- optional
-        org_files = {
-          "/Users/bensiau/Library/Mobile Documents/com~apple~CloudDocs/org/projects/*.org",
-          "/Users/bensiau/Library/Mobile Documents/com~apple~CloudDocs/org/agendas/*.org",
-        },
-      })
-    end,
-  },
 }
