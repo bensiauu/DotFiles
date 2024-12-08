@@ -6,8 +6,8 @@ return {
     config = function()
       -- Setup orgmode
       require("orgmode").setup({
-        org_agenda_files = "/Users/bensiau/Library/Mobile Documents/com~apple~CloudDocs/org/agendas/*",
-        org_default_notes_file = "/Users/bensiau/Library/Mobile Documents/com~apple~CloudDocs/org/agendas/inbox.org",
+        org_agenda_files = "~/Documents/Ben_Ideaverse/org/agendas/*",
+        org_default_notes_file = "~/Documents/Ben_Ideaverse/org/agendas/inbox.org",
         mappings = {
           org = {
             org_toggle_checkbox = "<leader>oc",

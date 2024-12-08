@@ -1,13 +1,14 @@
+# ~/.config/starship.toml
+
 # Character prompt symbol
 [character]
-success_symbol = "[➜](bold green) "     # Symbol for successful commands with green color
-error_symbol = "[✗](bold red) " 
-
+success_symbol = "[➜](bold green)"      # Green for successful commands
+error_symbol = "[✗](bold red)"          # Red for errors
 
 # Git branch and status
 [git_branch]
 format = " [$branch]($style)"
-style = "bold purple"
+style = "bold #cba6f7"                  # Catppuccin Mauve for Git branches
 
 [git_status]
 conflicted = "🚧 "
@@ -20,31 +21,39 @@ modified = "✏ "
 deleted = "🗑 "
 renamed = "» "
 format = "[$all_status$ahead_behind]($style)"
-style = "bold yellow"
+style = "bold #fab387"                  # Catppuccin Peach for Git status
 
-# Battery display (will show only if battery is below a certain threshold by default)
+# Battery display (shows only if battery is below a certain threshold by default)
 [battery]
 full_symbol = "🔋"
 charging_symbol = "⚡"
 discharging_symbol = "🔋"
-disabled = false  # If set to true, will hide the battery module entirely
+format = "[$symbol$percentage]($style)"
+style = "bold #a6e3a1"                  # Catppuccin Green for battery
 
 # Programming languages
 [nodejs]
 format = "via 🌐 $version "
+style = "bold #f9e2af"                  # Catppuccin Yellow for Node.js
 disabled = true
 
 [python]
 format = "via 🐍 $version "
+style = "bold #f38ba8"                  # Catppuccin Pink for Python
 disabled = false
 
 # Directory path truncation
 [directory]
 truncation_length = 3
 format = "📂 [$path]($style)"
+style = "bold #94e2d5"                  # Catppuccin Teal for directories
 
+# AWS
 [aws]
 disabled = true
 
-
+# Time module (optional)
+[time]
+format = "🕒 [$time]($style)"
+style = "bold #cdd6f4"                  # Catppuccin Lavender for time
 
