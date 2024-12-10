@@ -1,0 +1,143 @@
+@import "frappe.css";
+
+* {
+    border: none;
+    border-radius: 0;
+    font-family: Roboto, 'Font Awesome 5', 'SFNS Display', Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    min-height: 0;
+}
+
+window#waybar {
+    background-color: @mantle;
+    opacity: 0.8;
+    border-bottom: 3px solid @surface2 ;
+    color: @text;
+}
+
+window#waybar.hidden {
+    opacity: 0.0;
+}
+
+/* https://github.com/Alexays/Waybar/wiki/FAQ#the-workspace-buttons-have-a-strange-hover-effect */
+#workspaces button {
+    padding: 0 5px;
+    background: transparent;
+    color: @text;
+    border-bottom: 3px solid transparent;
+}
+
+#workspaces button.focused {
+    background: @surface1;
+    border-bottom: 3px solid @text;
+}
+
+#workspaces button.urgent {
+    background-color: @red;
+}
+
+#mode {
+    background: @surface1;
+    border-bottom: 3px solid @text;
+}
+
+#clock, #battery, #cpu, #memory, #temperature, #backlight, #network, #pulseaudio, #custom-media, #tray, #mode, #idle_inhibitor {
+    padding: 0 10px;
+    margin: 0 5px;
+}
+
+#clock {
+    background-color: @overlay0;
+}
+
+#battery {
+    background-color: @text;
+    color: @mantle;
+}
+
+#battery.charging {
+    color: @mantle;
+    background-color: @green;
+}
+
+@keyframes blink {
+    to {
+        background-color: @text;
+        color: @mantle;
+    }
+}
+
+#battery.critical:not(.charging) {
+    background: @red;
+    color: @text;
+    animation-name: blink;
+    animation-duration: 0.5s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+#cpu {
+    background: @green;
+    color: @mantle;
+}
+
+#memory {
+    background: @mauve;
+}
+
+#backlight {
+    background: @overlay1;
+}
+
+#network {
+    background: @blue;
+}
+
+#network.disconnected {
+    background: @red;
+}
+
+#pulseaudio {
+    background: @yellow;
+    color: @mantle;
+}
+
+#pulseaudio.muted {
+    background: @overlay1;
+    color: @surface2;
+}
+
+#custom-media {
+    background: @teal;
+    color: @surface2;
+}
+
+.custom-spotify {
+    background: @teal;
+}
+
+.custom-vlc {
+    background: @yellow;
+}
+
+#temperature {
+    background: @peach;
+}
+
+#temperature.critical {
+    background: @red;
+}
+
+#tray {
+    background-color: @blue;
+}
+
+#idle_inhibitor {
+    background-color: @crust;
+}
+
+#idle_inhibitor.activated {
+    background-color: @overlay2;
+    color: @crust;
+}
