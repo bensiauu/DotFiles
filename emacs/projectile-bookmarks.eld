@@ -1,0 +1,1 @@
+("~/.config/" "~/Documents/projects/AILiftWeb/" "~/Documents/projects/resource-booking-v2/" "~/Documents/projects/notes/" "~/Documents/projects/financial-assistance-scheme/" "~/Documents/projects/epub_reader_mac/" "~/Documents/projects/data-acquisition-service/" "~/Documents/projects/bodoro_marketplace/" "~/Documents/projects/Leetcode/")

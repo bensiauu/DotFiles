@@ -23,13 +23,6 @@ renamed = "» "
 format = "[$all_status$ahead_behind]($style)"
 style = "bold #fab387"                  # Catppuccin Peach for Git status
 
-# Battery display (shows only if battery is below a certain threshold by default)
-[battery]
-full_symbol = "🔋"
-charging_symbol = "⚡"
-discharging_symbol = "🔋"
-format = "[$symbol$percentage]($style)"
-style = "bold #a6e3a1"                  # Catppuccin Green for battery
 
 # Programming languages
 [nodejs]

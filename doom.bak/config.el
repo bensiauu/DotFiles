@@ -1,41 +1,18 @@
-#+title: EMACS Config
-#+STARTUP: indent show2levels
-
-
-* Config
-** Miscellaneous
-#+begin_src emacs-lisp
-
 ;; Some functionality uses this to identify you, e.g. GPG configuration, email
 ;; clients, file templates and snippets. It is optional.
-(setq user-full-name "John Doe"
-      user-mail-address "john@doe.com")
+(setq user-full-name "Benjamin"
+      user-mail-address "benjaminsiau@gmail.com")
 
-#+end_src
-
-** Appearance
-*** Font
-#+begin_src emacs-lisp
 (setq doom-font (font-spec :family "SF Mono" :size 16 :weight 'semi-light))
-#+end_src
-*** Theme
-#+begin_src emacs-lisp
-(setq doom-theme 'modus-vivendi-tinted)
-#+end_src
-*** Transparency
-#+begin_src emacs-lisp
+
+(setq doom-theme 'doom-zenburn)
 
 ;; (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
 ;; (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
-#+end_src
-*** Line numbers
-#+begin_src  emacs-lisp
 
 (setq display-line-numbers-type t)
 (setq display-line-numbers-type 'relative)
-#+end_src
-*** Floating window
-#+begin_src emacs-lisp
+
 (use-package! vertico-posframe
   :after vertico
   :config
@@ -47,41 +24,19 @@
                                        (right-fringe . 10)))
   (vertico-posframe-mode 1))
 
-#+end_src
-*** Disable Title Bar
-#+begin_src emacs-lisp
 (add-to-list 'default-frame-alist '(undecorated . t))
 
-#+end_src
-** Org
-#+begin_src  emacs-lisp
-(setq org-directory "~/org/")
-
-(setq org-agenda-files '("~/org/agendas"))
+(setq org-directory "~/Documents/Ben_Ideaverse/org")
+(setq org-agenda-files '("~/Documents/Ben_Ideaverse/org/agendas"))
 (setq org-capture-templates
-       `(("i" "Inbox" entry  (file "agendas/inbox.org")
+       `(("i" "Inbox" entry  (file "~/Documents/Ben_Ideaverse/org/agendas/inbox.org")
         ,(concat "* TODO %?\n"
                  "/Entered on/ %U"))))
 ;; Org-roam setup in Doom Emacs
-(use-package! org-roam
-  :custom
-  (org-roam-directory (file-truename "~/org/roam/"))
-  :config
-  ;; Set a custom display template for nodes
-  (setq org-roam-node-display-template
-        (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
   (setq org-attach-directory "~/org/org-attachments")
-  (setq org-startup-with-inline-images t))
-  ;; Start the database autosync mode
-  (org-roam-db-autosync-mode)
-  ;; Load org-roam-protocol if needed
-  (require 'org-roam-protocol)
+  (setq org-startup-with-inline-images t)
   (with-eval-after-load 'org (global-org-modern-mode))
   (setq org-modern-star ["◉" "○" "✸" "✿"]) ;; Customize bullet styles
-
-#+end_src
-*** Image paste
-#+begin_src emacs-lisp
 
 (use-package! org-download
     :after org
@@ -96,22 +51,12 @@
     :config
     (require 'org-download))
 
-
-#+end_src
-*** Capture to inbox
-#+begin_src emacs-lisp
 (defun org-capture-inbox ()
      (interactive)
      (call-interactively 'org-store-link)
      (org-capture nil "i"))
 
 (map! :desc "Org Capture Inbox" "C-c i" #'org-capture-inbox)
-
-#+end_src
-
-** Packages
-#+begin_src emacs-lisp
-
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
@@ -148,11 +93,6 @@
   (define-key dired-mode-map (kbd "h") #'dired-up-directory)   ;; Move up a directory
   (define-key dired-mode-map (kbd "k") #'dired-previous-line)) ;; Move to the previous line
 
-#+end_src
-
-** VTerm
-#+begin_src emacs-lisp
-
 (after! vterm
   (setq vterm-shell "fish"))
 (add-hook 'vterm-mode-hook
@@ -162,59 +102,7 @@
 (map! :leader
       :prefix "v"
       :desc "Run vterm in project" "t" #'vterm)
-#+end_src
 
-** LSP
-*** Angular
-#+begin_src emacs-lisp
-
-;; (after! eglot
-;;   ;; Helper function to find the nearest node_modules path
-;;   (defun my-find-node-modules-path ()
-;;     "Find the nearest node_modules directory from the current file."
-;;     (let ((root (locate-dominating-file default-directory "node_modules")))
-;;       (when root
-;;         (expand-file-name "node_modules" root))))
-;;   (add-to-list 'eglot-server-programs
-;;                `((typescript-mode tsx-mode)
-;;                  . (lambda ()
-;;                      (let ((node-modules-path (my-find-node-modules-path)))
-;;                        (when node-modules-path
-;;                          `("node"
-;;                            ,(expand-file-name "@angular/language-server" node-modules-path)
-;;                            "--ngProbeLocations" ,node-modules-path
-;;                            "--tsProbeLocations" ,node-modules-path
-;;                            "--stdio"))))))
-
-;;   ;; Enable eglot for Angular projects
-;;   (defun check-if-angular ()
-;;     "Enable eglot if angular.json is present in the project root."
-;;     (when (and (projectile-project-root)
-;;                (file-exists-p (expand-file-name "angular.json" (projectile-project-root))))
-;;       (eglot-ensure)))
-
-;;   ;; Hook to start eglot in Angular projects
-;;   (add-hook 'typescript-mode-hook 'check-if-angular)
-;;   (add-hook 'tsx-mode-hook 'check-if-angular))
-#+end_src
-*** General
-#+begin_src emacs-lisp
-
-
-#+end_src
-*** Python
-#+begin_src emacs-lisp
-;; (use-package! eglot
-;;   :hook (python-mode . eglot-ensure)
-;;   :config
-;;   ;; Configure eglot to use Pyright
-;;   (add-to-list 'eglot-server-programs '(python-mode . ("pyright-langserver" "--stdio"))))
-
-
-
-#+end_src
-*** Debugger
-#+begin_src emacs-lisp
 (use-package! dap-mode
   :config
   (dap-auto-configure-mode t)
@@ -240,11 +128,6 @@
        :desc "Step Out" "o" #'dap-step-out
        :desc "Next" "n" #'dap-next))
 
-
-
-#+end_src
-** Tree-sitter
-#+begin_src emacs-lisp
 (use-package! tree-sitter
   :hook ((prog-mode . tree-sitter-mode)
          (tree-sitter-after-on . tree-sitter-hl-mode))
@@ -252,4 +135,3 @@
   (require 'tree-sitter-langs)  ;; Load language support
   ;; Enable Tree-sitter's highlighting mode
   (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
-#+end_src
