@@ -1,35 +1,14 @@
+;; ================================
+;; init.el - Emacs configuration file
+;; ================================
+
+;; Performance
 (setq gc-cons-threshold #x40000000)
 
 ;; Set the maximum output size for reading process output, allowing for larger data transfers.
 (setq read-process-output-max (* 1024 1024 4))
 
-(defun start/org-babel-tangle-config ()
-  (when (string-equal (file-name-directory (buffer-file-name))
-                      (expand-file-name user-emacs-directory))
-    ;; Dynamic scoping to the rescue
-    (let ((org-confirm-babel-evaluate nil))
-      (org-babel-tangle))))
-
-(add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'start/org-babel-tangle-config)))
-
-(require 'use-package-ensure) ;; Load use-package-always-ensure
-(setq use-package-always-ensure t) ;; Always ensures that a package is installed
-(setq package-archives '(("melpa" . "https://melpa.org/packages/") ;; Sets default package repositories
-                         ("org" . "https://orgmode.org/elpa/")
-                         ("elpa" . "https://elpa.gnu.org/packages/")
-                         ("nongnu" . "https://elpa.nongnu.org/nongnu/"))) ;; For Eat Terminal
-
-(setq display-line-numbers-type t)
-  (setq display-line-numbers-type 'relative)
-
-  (set-face-attribute 'default nil :family "FiraCode Nerd Font"  :height 180)
-  (when (eq system-type 'darwin)       ;; Check if the system is macOS.
-    (setq mac-command-modifier 'meta)  ;; Set the Command key to act as the Meta key.
-    (set-face-attribute 'default nil :family "FiraCode Nerd Font" :height 180))
-(use-package doom-modeline
-  :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-height 15)))
-(load-theme 'modus-operandi)
+;; Emacs options
 
 (use-package emacs
 :custom
@@ -68,14 +47,37 @@
 :bind (
        ([escape] . keyboard-escape-quit) ;; Makes Escape quit prompts (Minibuffer Escape)
        ))
-;; Fix general.el leader key not working instantly in messages buffer with evil mode
-;;:ghook ('after-init-hook
-;;        (lambda (&rest _)
-;;          (when-let ((messages-buffer (get-buffer "*Messages*")))
-;;            (with-current-buffer messages-buffer
-;;              (evil-normalize-keymaps))))
-;;        nil nil t)
-;;)
+
+
+;; -------------------------------
+;; Package Management Setup
+;; -------------------------------
+(require 'package)
+(setq package-enable-at-startup nil)  ;; Prevent double-loading of packages
+
+;; Set up package repositories
+(setq package-archives
+      '(("melpa" . "https://melpa.org/packages/")
+        ("gnu"   . "https://elpa.gnu.org/packages/")))
+(package-initialize)
+
+;; Bootstrap use-package if not already installed
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+(require 'use-package)
+(setq use-package-always-ensure t)
+
+;; -------------------------------
+;; User Interface Enhancements
+;; -------------------------------
+(use-package exec-path-from-shell
+    :ensure t
+    :config
+    (exec-path-from-shell-initialize))
+(set-face-attribute 'default nil :family "FiraCode Nerd Font"  :height 180)
+  (when (eq system-type 'darwin)       ;; Check if the system is macOS.
+    (setq mac-command-modifier 'meta))  ;; Set the Command key to act as the Meta key.
 
 (use-package which-key
 :init
@@ -91,6 +93,22 @@
 (which-key-max-description-length 25)
 (which-key-allow-imprecise-window-fit nil)) ;; Fixes which-key window slipping out in Emacs Daemon
 
+
+(load-theme 'modus-operandi)
+
+;; Doom modeline for a sleek status line
+(use-package doom-modeline
+  :init (doom-modeline-mode 1)
+  :config
+  (setq doom-modeline-height 25))
+
+;; Enable global line numbers and matching parentheses
+(global-display-line-numbers-mode 1)
+(show-paren-mode 1)
+
+;; -------------------------------
+;; Evil Mode and Key-Chord for Vim-like editing
+;; -------------------------------
 (use-package evil
     :init ;; Execute code Before a package is loaded
     (evil-mode)
@@ -98,6 +116,7 @@
     (evil-set-initial-state 'eat-mode 'insert) ;; Set initial state in eat terminal to insert mode
     :custom ;; Customization of package custom variables
     (evil-want-keybinding nil)    ;; Disable evil bindings in other modes (It's not consistent and not good)
+	(evil-want-integration t)
     (evil-want-C-u-scroll t)      ;; Set C-u to scroll up
     (evil-want-C-i-jump nil)      ;; Disables C-i jump
     (evil-undo-system 'undo-redo) ;; C-r to redo
@@ -107,20 +126,26 @@
                 ("SPC" . nil)
                 ("RET" . nil)
                 ("TAB" . nil)))
-  (use-package evil-collection
+
+(use-package evil-collection
     :after evil
     :config
     ;; Setting where to use evil-collection
     (setq evil-collection-mode-list '(dired ibuffer magit corfu vertico consult))
-    (evil-collection-init))
+    (evil-collection-init)
+	(evil-collection-define-key 'normal 'dired-mode-map
+    (kbd "l") 'dired-find-file
+    (kbd "h") 'dired-up-directory)
+)
 
+;; Use key-chord to map "jk" in insert mode to exit to normal mode
 (use-package key-chord
-  :after evil
   :config
-  (key-chord-mode 1)                    ;; Enable key-chord mode
-  (key-chord-define evil-insert-state-map "jk" 'evil-normal-state)) ;; 'jk' exits insert mode
+  (key-chord-mode 1)
+  (setq key-chord-two-keys-delay 0.25)
+  (key-chord-define evil-insert-state-map "jk" 'evil-normal-state))
 
-(use-package general
+ (use-package general
 :config
 (general-evil-setup)
 ;; Set up 'SPC' as the leader key
@@ -136,7 +161,7 @@
 
 (start/leader-keys
   "f" '(:ignore t :wk "Find")
-  "f c" '((lambda () (interactive) (find-file "~/.config/emacs/config.org")) :wk "Edit emacs config")
+  "f c" '((lambda () (interactive) (find-file "~/.config/emacs/init.el")) :wk "Edit emacs config")
   "f r" '(consult-recent-file :wk "Recent files")
   "f f" '(consult-fd :wk "Fd search for files")
   "f g" '(consult-ripgrep :wk "Ripgrep search in files")
@@ -188,9 +213,9 @@
   "t t" '(visual-line-mode :wk "Toggle truncated lines (wrap)")
   "t l" '(display-line-numbers-mode :wk "Toggle line numbers")))
 
-(setq org-directory "~/Documents/Ben_Ideaverse/org")
-(setq org-agenda-files '("~/Documents/Ben_Ideaverse/org/agendas"))
-
+;; -------------------------------
+;; Completion and Snippets
+;; -------------------------------
 (use-package vertico
       :ensure t
       :hook
@@ -212,17 +237,14 @@
               "  ")
             cand))))
 
-    ;; vertico float
-    (use-package vertico-posframe
-      :after vertico
-      :config
-      (setq vertico-posframe-poshandler #'posframe-poshandler-frame-center
-            vertico-posframe-border-width 3
-            vertico-posframe-width 100
-            vertico-posframe-height 20
-            vertico-posframe-parameters '((left-fringe . 10)
-                                           (right-fringe . 10)))
-      (vertico-posframe-mode 1))
+(use-package vertico-directory
+  :after vertico
+  :ensure nil
+  :bind (:map vertico-map
+              ;; When in a file name, DEL will delete the directory component if appropriate.
+              ("DEL" . vertico-directory-delete-char)
+              ;; Optionally, bind M-DEL to delete the previous directory name (word).
+              ("M-DEL" . vertico-directory-delete-word)))
 
     ;;; ORDERLESS
     (use-package orderless
@@ -277,23 +299,7 @@
       :hook
       (embark-collect-mode . consult-preview-at-point-mode)) ;; Enable preview in Embark collect mode.
 
-
-    ;;; TREESITTER-AUTO
-    ;; Treesit-auto simplifies the use of Tree-sitter grammars in Emacs, 
-    ;; providing automatic installation and mode association for various 
-    ;; programming languages. This enhances syntax highlighting and 
-    ;; code parsing capabilities, making it easier to work with modern 
-    ;; programming languages.
-    (use-package treesit-auto
-      :ensure t
-      :after emacs
-      :custom
-      (treesit-auto-install 'prompt)
-      :config
-      (treesit-auto-add-to-auto-mode-alist 'all)
-      (global-treesit-auto-mode t))
-
-  (use-package corfu
+(use-package corfu
     ;; Optional customizations
     :custom
     (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
@@ -350,54 +356,77 @@
   ;;(add-to-list 'completion-at-point-functions #'cape-sgml) ;; Complete Unicode char from SGML entity, e.g., &alpha
   ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345) ;; Complete Unicode char using RFC 1345 mnemonics
   )
+;; Which-key displays available keybindings in popup
+(use-package which-key
+  :config (which-key-mode))
 
-(use-package dired
-  :ensure nil ;; dired is built-in, no need to install
-  :config
-  (evil-define-key 'normal dired-mode-map
-    "h" 'dired-up-directory    ;; Use 'h' to go up a directory
-    "l" 'dired-up-directory       ;; Default: Go to the previous line
-    ))
-
-;; Setup Eglot for LSP
-   (use-package eglot
-     :custom 
-     (eglot-events-buffer-size 0) ;; No event buffers (Lsp server logs)
-;;  (eglot-autoshutdown t);; Shutdown unused servers.
-;;  (eglot-report-progress nil) ;; Disable lsp server logs (Don't show lsp messages at the bottom, java)
-     :hook
-     ((python-mode . eglot-ensure)
-      (go-mode . eglot-ensure)
-      (html-mode . eglot-ensure)
-      (css-mode . eglot-ensure)
-      (typescript-mode . eglot-ensure)
-      (javascript-mode . eglot-ensure)
-      (web-mode . eglot-ensure)  ;; For Angular
-      (rust-mode . eglot-ensure))
-     :config
-     ;; Associate major modes with language servers
-     (add-to-list 'eglot-server-programs '(python-mode . ("pyright-langserver" "--stdio")))
-     (add-to-list 'eglot-server-programs '(go-mode . ("gopls")))
-     (add-to-list 'eglot-server-programs '(html-mode . ("vscode-html-language-server" "--stdio")))
-     (add-to-list 'eglot-server-programs '(css-mode . ("vscode-css-language-server" "--stdio")))
-     (add-to-list 'eglot-server-programs '(typescript-mode . ("typescript-language-server" "--stdio")))
-     (add-to-list 'eglot-server-programs '(javascript-mode . ("typescript-language-server" "--stdio")))
-     (add-to-list 'eglot-server-programs '(web-mode . ("angular-language-server" "--stdio" "--tsProbeLocations" "/usr/local/lib/node_modules" "--ngProbeLocations" "/usr/local/lib/node_modules")))
-     (add-to-list 'eglot-server-programs '(rust-mode . ("rust-analyzer"))))
-
-   ;; Optional: Keybindings for Eglot
-   ;;(define-key eglot-mode-map (kbd "SPC c r") 'eglot-rename)
-   ;;(define-key eglot-mode-map (kbd "SPC c a") 'eglot-code-actions)
-   ;;(define-key eglot-mode-map (kbd "SPC c h") 'eldoc)
-
+;; Projectile for managing projects
 (use-package projectile
-  :init
-  (projectile-mode)
-  :custom
-  (projectile-run-use-comint-mode t) ;; Interactive run dialog when running projects inside emacs (like giving input)
-  (projectile-switch-project-action #'projectile-dired) ;; Open dired when switching to a project
-  (projectile-project-search-path '("~/Documents/projects/" ))) ;; . 1 means only search the first subdirectory level for projects
-;; Use Bookmarks for smaller, not standard projects
+  :init (projectile-mode +1)
+  :config (setq projectile-project-search-path '("~/projects/"))
+  :bind-keymap
+  ("C-c p" . projectile-command-map))
 
-(use-package yasnippet-snippets
-:hook (prog-mode . yas-minor-mode))
+;; -------------------------------
+;; LSP Mode and Language Support
+;; -------------------------------
+;; Core LSP Mode configuration
+(use-package lsp-mode
+  :commands lsp
+  :hook ((python-mode . lsp)
+         (go-mode . lsp-deferred)
+         (typescript-mode . lsp)
+         (web-mode . lsp))
+  :init
+  (setq lsp-keymap-prefix "C-c l")
+  :config
+  (lsp-enable-which-key-integration t))
+
+;; LSP UI for a better LSP experience
+(use-package lsp-ui
+  :commands lsp-ui-mode)
+
+;; -------------------------------
+;; Language Specific Configurations
+;; -------------------------------
+;; Python: Using lsp-pyright for LSP support
+(use-package lsp-pyright
+  :after lsp-mode
+  :hook (python-mode . (lambda ()
+                          (require 'lsp-pyright)
+                          (lsp)))  ;; or use lsp-deferred if preferred
+  :config
+  (setq lsp-pyright-typechecking-mode "basic"))
+
+;; Go: Go-mode with LSP support and auto-formatting
+(use-package go-mode
+  :mode "\\.go\\'"
+  :hook (go-mode . lsp-deferred)
+  :config
+  (setq gofmt-command "goimports")
+  (add-hook 'before-save-hook 'gofmt-before-save))
+
+;; Web Development: web-mode for HTML, CSS, JS, and TypeScript
+(use-package web-mode
+  :mode (("\\.html?\\'" . web-mode)
+         ("\\.css\\'"   . web-mode)
+         ("\\.js\\'"    . web-mode)
+         ("\\.ts\\'"    . web-mode))
+  :config
+  (setq web-mode-markup-indent-offset 2
+        web-mode-code-indent-offset 2))
+
+;; TypeScript/Angular: typescript-mode for .ts and .tsx files
+(use-package typescript-mode
+  :mode ("\\.ts\\'" "\\.tsx\\'"))
+
+;; -------------------------------
+;; Additional Popular Tools
+;; -------------------------------
+;; Flycheck for on-the-fly syntax checking
+(use-package flycheck
+  :init (global-flycheck-mode))
+
+;; Magit for Git integration
+(use-package magit
+  :bind ("C-x g" . magit-status))
