@@ -94,7 +94,7 @@
 (which-key-allow-imprecise-window-fit nil)) ;; Fixes which-key window slipping out in Emacs Daemon
 
 
-(load-theme 'modus-operandi)
+(load-theme 'modus-vivendi-tinted)
 
 ;; Doom modeline for a sleek status line
 (use-package doom-modeline
@@ -186,9 +186,7 @@
   "d j" '(dired-jump :wk "Dired jump to current"))
 
 (start/leader-keys
-  "e" '(:ignore t :wk "Eglot Evaluate")
-  "e e" '(eglot-reconnect :wk "Eglot Reconnect")
-  "e f" '(eglot-format :wk "Eglot Format")
+  "e" '(:ignore t :wk "Evaluate")
   "e l" '(consult-flymake :wk "Consult Flymake")
   "e b" '(eval-buffer :wk "Evaluate elisp in buffer")
   "e r" '(eval-region :wk "Evaluate elisp in region"))
@@ -253,9 +251,9 @@
   	(completion-category-overrides '((files styles basic partial-completion)))))
 
     ;;; MARGINALIA
-    ;; Marginalia enhances the completion experience in Emacs by adding 
-    ;; additional context to the completion candidates. This includes 
-    ;; helpful annotations such as documentation and other relevant 
+    ;; Marginalia enhances the completion experience in Emacs by adding
+    ;; additional context to the completion candidates. This includes
+    ;; helpful annotations such as documentation and other relevant
     ;; information, making it easier to choose the right option.
     (use-package marginalia
       :ensure t
@@ -348,13 +346,13 @@
   (add-to-list 'completion-at-point-functions #'cape-elisp-block) ;; Complete elisp in Org or Markdown mode
   (add-to-list 'completion-at-point-functions #'cape-keyword) ;; Keyword/Snipet completion
 
-  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev) ;; Complete abbreviation
-  ;;(add-to-list 'completion-at-point-functions #'cape-history) ;; Complete from Eshell, Comint or minibuffer history
-  ;;(add-to-list 'completion-at-point-functions #'cape-line) ;; Complete entire line from current buffer
-  ;;(add-to-list 'completion-at-point-functions #'cape-elisp-symbol) ;; Complete Elisp symbol
-  ;;(add-to-list 'completion-at-point-functions #'cape-tex) ;; Complete Unicode char from TeX command, e.g. \hbar
-  ;;(add-to-list 'completion-at-point-functions #'cape-sgml) ;; Complete Unicode char from SGML entity, e.g., &alpha
-  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345) ;; Complete Unicode char using RFC 1345 mnemonics
+  (add-to-list 'completion-at-point-functions #'cape-abbrev) ;; Complete abbreviation
+  (add-to-list 'completion-at-point-functions #'cape-history) ;; Complete from Eshell, Comint or minibuffer history
+  (add-to-list 'completion-at-point-functions #'cape-line) ;; Complete entire line from current buffer
+  (add-to-list 'completion-at-point-functions #'cape-elisp-symbol) ;; Complete Elisp symbol
+  (add-to-list 'completion-at-point-functions #'cape-tex) ;; Complete Unicode char from TeX command, e.g. \hbar
+  (add-to-list 'completion-at-point-functions #'cape-sgml) ;; Complete Unicode char from SGML entity, e.g., &alpha
+  (add-to-list 'completion-at-point-functions #'cape-rfc1345) ;; Complete Unicode char using RFC 1345 mnemonics
   )
 ;; Which-key displays available keybindings in popup
 (use-package which-key
@@ -363,9 +361,86 @@
 ;; Projectile for managing projects
 (use-package projectile
   :init (projectile-mode +1)
-  :config (setq projectile-project-search-path '("~/projects/"))
+  :config (setq projectile-project-search-path '("~/Documents/projects/"))
   :bind-keymap
   ("C-c p" . projectile-command-map))
+
+
+;; terminal emulator
+(use-package posframe
+  :ensure t)
+
+;; Define a custom display function that shows the buffer in a floating posframe.
+(defun my/vterm-toggle-posframe-display (buffer &optional _other-window)
+  "Display BUFFER in a floating posframe.
+Customize the dimensions and position as desired."
+  (posframe-show buffer
+                 :name "vterm-toggle-posframe"
+                 :position posframe-handler
+                 :width 80    ;; adjust width as needed
+                 :height 20   ;; adjust height as needed
+                 :min-width 80
+                 :min-height 20
+                 :internal-border-width 1
+                 :internal-border-color "gray"))
+
+;; Configure vterm and vterm-toggle.
+;; Ensure required packages are installed.
+(use-package posframe
+  :ensure t)
+(use-package vterm
+  :ensure t)
+
+(defvar float-term-prefix "float-term")
+
+(defun float-term--buffer-name ()
+  (format "%s<%s>"
+          float-term-prefix
+          (if (string= (projectile-project-name) "-")
+              (buffer-file-name)
+            (projectile-project-name))))
+
+(defun float-term--bufferp ()
+  (and (eq major-mode 'vterm-mode)
+       (string-prefix-p float-term-prefix (buffer-name))))
+
+
+(defun float-term--bufferp ()
+  (and (eq major-mode 'vterm-mode)
+       (string-prefix-p float-term-prefix (buffer-name))))
+
+
+(defun float-term-toggle ()
+  "Toggle `vterm' child frame.
+The child frame will use the project root or current directory as default-directory."
+  (interactive)
+  (if (float-term--bufferp)
+      (posframe-delete-frame (current-buffer))
+    (let ((default-directory (or (projectile-project-root)
+                                 (file-name-directory buffer-file-name)))
+          (ppt-buffer-name (float-term--buffer-name)))
+      (let ((ppt-buffer (or (get-buffer ppt-buffer-name)
+                            (vterm--internal #'ignore ppt-buffer-name)))
+            (width  (max 80 (/ (frame-width) 2)))
+            (height (/ (frame-height) 2)))
+        (posframe-show
+         ppt-buffer
+         :poshandler #'posframe-poshandler-frame-center
+         :left-fringe 8
+         :right-fringe 8
+         :width width
+         :height height
+         :min-width width
+         :min-height height
+         :internal-border-width 3
+         :internal-border-color (face-foreground 'font-lock-comment-face nil t)
+         :accept-focus t)
+        (with-current-buffer ppt-buffer
+          (goto-char (point-max)))))))
+
+;; Bind C-/ to the custom function.
+(global-set-key (kbd "C-/") #'float-term-toggle)
+
 
 ;; -------------------------------
 ;; LSP Mode and Language Support
@@ -381,6 +456,11 @@
   (setq lsp-keymap-prefix "C-c l")
   :config
   (lsp-enable-which-key-integration t))
+
+(add-hook 'lsp-mode-hook
+          (lambda ()
+            (add-hook 'before-save-hook #'lsp-format-buffer nil t)))
+
 
 ;; LSP UI for a better LSP experience
 (use-package lsp-ui
@@ -420,9 +500,6 @@
 (use-package typescript-mode
   :mode ("\\.ts\\'" "\\.tsx\\'"))
 
-;; -------------------------------
-;; Additional Popular Tools
-;; -------------------------------
 ;; Flycheck for on-the-fly syntax checking
 (use-package flycheck
   :init (global-flycheck-mode))
