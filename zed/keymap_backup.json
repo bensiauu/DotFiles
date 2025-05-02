@@ -1,0 +1,73 @@
+// Zed keymap
+//
+// For information on binding keys, see the Zed
+// documentation: https://zed.dev/docs/key-bindings
+//
+// To see the default key bindings run `zed: open default keymap`
+// from the command palette.
+[
+  {
+    "context": "Editor",
+    "bindings": {
+      "ctrl-h": ["workspace::ActivatePaneInDirection", "Left"],
+      "ctrl-l": ["workspace::ActivatePaneInDirection", "Right"],
+      "ctrl-k": ["workspace::ActivatePaneInDirection", "Up"],
+      "ctrl-j": ["workspace::ActivatePaneInDirection", "Down"],
+      "space f b": "tab_switcher::Toggle"
+    }
+  },
+  {
+    "context": "Editor && vim_mode == normal",
+    "bindings": {
+      "space e": "workspace::ToggleLeftDock",
+      "ctrl-/": "workspace::ToggleBottomDock",
+      "space p": "editor::Format",
+      "space f f": "file_finder::Toggle",
+      "ctrl w v": "pane::SplitRight",
+      "space b k": "pane::CloseActiveItem",
+      "space f s": "workspace::Save",
+      "space c a": "editor::ToggleCodeActions",
+      "g r": "editor::FindAllReferences",
+      "[ b": "editor::TabPrev"
+    }
+  },
+  {
+    "context": "Terminal",
+    "bindings": {
+      "ctrl-h": ["workspace::ActivatePaneInDirection", "Left"],
+      "ctrl-l": ["workspace::ActivatePaneInDirection", "Right"],
+      "ctrl-k": ["workspace::ActivatePaneInDirection", "Up"],
+      "ctrl-j": ["workspace::ActivatePaneInDirection", "Down"],
+      "ctrl-w  c": "pane::CloseActiveItem",
+      "ctrl-w v": "pane::SplitRight",
+      "ctrl-w  s": "pane::SplitDown",
+      "ctrl-a c": "workspace::NewTerminal"
+    }
+  },
+  {
+    "context": "Editor && vim_mode == insert && !menu",
+    "bindings": {
+      "j k": "vim::NormalBefore"
+    }
+  },
+  {
+    "context": "ProjectPanel",
+    "bindings": {
+      "space e": "workspace::ToggleLeftDock"
+    }
+  },
+  {
+    "context": "Terminal",
+    "bindings": {
+      "ctrl-/": "workspace::ToggleBottomDock"
+    }
+  },
+  {
+    "context": "EmptyPane || SharedScreen",
+    "bindings": {
+      // Put key bindings here (in addition to the context above) if you want them to
+      // work when no editor exists.
+      "space f f": "file_finder::Toggle"
+    }
+  }
+]

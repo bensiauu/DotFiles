@@ -1,0 +1,90 @@
+// Zed keymap
+//
+// For information on binding keys, see the Zed
+// documentation: https://zed.dev/docs/key-bindings
+//
+// To see the default key bindings run `zed: open default keymap`
+// from the command palette.
+[
+  {
+    "context": "Editor",
+    "bindings": {
+      "ctrl-h": "workspace::ActivatePaneLeft",
+      "ctrl-l": "workspace::ActivatePaneRight",
+      "ctrl-k": "workspace::ActivatePaneUp",
+      "ctrl-j": "workspace::ActivatePaneDown",
+      "space f b": "tab_switcher::Toggle",
+      "ctrl-w c": "pane::CloseAllItems"
+    }
+  },
+  {
+    "context": "Editor && vim_mode == normal",
+    "bindings": {
+      "space e": "workspace::ToggleLeftDock",
+      "ctrl-/": "workspace::ToggleBottomDock",
+      "space p": "editor::Format",
+      "space f f": "file_finder::Toggle",
+      "ctrl w v": "pane::SplitRight",
+      "space b k": "pane::CloseActiveItem",
+      "space f s": "workspace::Save",
+      "space c a": "editor::ToggleCodeActions",
+      "g r": "editor::FindAllReferences",
+      "[ b": "editor::Backtab"
+    }
+  },
+  {
+    "context": "Editor && vim_mode == visual",
+    "bindings": {
+      "g s a": "vim::PushAddSurrounds"
+    }
+  },
+  {
+    "context": "Terminal",
+    "bindings": {
+      "ctrl-h": "workspace::ActivatePaneLeft",
+      "ctrl-l": "workspace::ActivatePaneRight",
+      "ctrl-k": "workspace::ActivatePaneUp",
+      "ctrl-j": "workspace::ActivatePaneDown",
+      "ctrl-w c": "pane::CloseAllItems",
+      "ctrl-w v": "pane::SplitRight",
+      "ctrl-w s": "pane::SplitDown",
+      "ctrl-a c": "workspace::NewTerminal",
+      "ctrl-/": "workspace::ToggleBottomDock"
+    }
+  },
+  {
+    "context": "Editor && vim_mode == insert",
+    "bindings": {
+      "j k": "vim::NormalBefore"
+    }
+  },
+  {
+    "context": "ProjectPanel",
+    "bindings": {
+      "space e": "workspace::ToggleLeftDock",
+      "ctrl-h": "workspace::ActivatePaneLeft",
+      "ctrl-l": "workspace::ActivatePaneRight",
+      // File operations
+      "a": "project_panel::NewFile",
+      "A": "project_panel::NewDirectory",
+      "r": "project_panel::Rename",
+      "d d": "project_panel::Delete",
+      "y y": "project_panel::Copy",
+      "p": "project_panel::Paste"
+    }
+  },
+  {
+    "context": "EmptyPane || SharedScreen",
+    "bindings": {
+      // Put key bindings here (in addition to the context above) if you want them to
+      // work when no editor exists.
+      "space f f": "file_finder::Toggle"
+    }
+  },
+  {
+    "context": "FileFinder",
+    "bindings": {
+      "ctrl-p": "file_finder::SelectPrevious"
+    }
+  }
+]
