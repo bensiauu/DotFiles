@@ -35,6 +35,12 @@
 (use-package ef-themes
   :config (load-theme 'ef-frost t))
 
+;; get path
+(use-package exec-path-from-shell
+  :if (memq window-system '(mac ns x))
+  :config
+  (exec-path-from-shell-initialize))
+
 ;; Doom modeline -------------------------------------------------------------
 (use-package nerd-icons        ;; icon set compatible with Nerd Fonts
   :if (display-graphic-p))
@@ -66,7 +72,7 @@
   :config (evil-collection-init))
 
 (use-package evil-escape
-  :after evil
+  :after eviL
   :init (setq evil-escape-key-sequence "jk")
   :config (evil-escape-mode 1))
 
@@ -75,32 +81,58 @@
   :init (which-key-mode)
   :config (setq which-key-idle-delay 0.5))
 
+;; Evil ----------------------------------------------------------------------
+(use-package evil
+  :init (setq evil-want-integration t evil-want-keybinding nil evil-undo-system 'undo-redo evil-want-C-u-scroll t)
+  :config (evil-mode 1)
+  (define-key evil-insert-state-map (kbd "j k") #'evil-normal-state))
+(use-package evil-collection :after evil :config (evil-collection-init))
+(use-package evil-escape :after evil :init (setq evil-escape-key-sequence "jk") :config (evil-escape-mode 1))
+
+;; which-key & general --------------------------------------------------------
+(use-package which-key :init (which-key-mode) :config (setq which-key-idle-delay 0.5))
 (use-package general
   :config
   ;; Leader key (SPC) across normal/visual/emacs states
-  (general-create-definer my/leader-keys
-    :states '(normal visual emacs)
-    :prefix "SPC"
-    :global-prefix "SPC")
+  (general-create-definer my/leader-keys :states '(normal visual emacs) :prefix "SPC" :global-prefix "SPC")
+  ;; --- Leader mappings -----------------------------------------------------
   (my/leader-keys
+    ;; Git -----------------------------------------------------------
     "g"  '(:ignore t :which-key "git")
     "gg" '(magit-status :which-key "status")
+
+    ;; Projects ------------------------------------------------------
     "p"  '(:ignore t :which-key "project")
     "pf" '(project-find-file :which-key "find file")
     "ps" '(project-switch-project :which-key "switch project")
-    "b"  '(consult-buffer :which-key "buffers")
+
+    ;; Buffers -------------------------------------------------------
+    "b"  '(:ignore t :which-key "buffers")   ; make "b" a prefix
+    "bf" '(consult-buffer :which-key "switch")
+    "bk" '(kill-buffer    :which-key "kill")
+
+    ;; Toggles -------------------------------------------------------
     "t"  '(:ignore t :which-key "toggles")
     "tt" '(ef-themes-select :which-key "theme")
+
+    ;; Files ---------------------------------------------------------
     "f"  '(:ignore t :which-key "file")
     "fs" '(save-buffer :which-key "save file")
-    "ff" '(find-file :which-key "find file"))
-  ;; LSP navigation (normal state)
-  (general-define-key
-   :states '(normal)
-   "gd" 'lsp-find-definition
-   "gr" 'lsp-find-references
-   "gc" 'comment-line))
+    "ff" '(find-file  :which-key "find file"))
 
+  ;; Common bindings outside leader
+  (general-define-key :states '(normal visual) "C-s" 'save-buffer "M-/" 'comment-or-uncomment-region)
+  ;; LSP navigation (normal state)
+  (general-define-key :states '(normal) "gd" 'lsp-find-definition "gr" 'lsp-find-references))
+
+(use-package avy
+  :defer t
+  :general
+  (my/leader-keys
+    "j"  '(:ignore t :which-key "jump")
+    "jj" '(avy-goto-char-timer :which-key "char")
+    "jw" '(avy-goto-word-1 :which-key "word")
+    "jl" '(avy-goto-line :which-key "line")))
 ;; Completion stack (Vertico + Corfu) ---------------------------------------
 (use-package vertico :init (vertico-mode))
 (use-package orderless :custom (completion-styles '(orderless basic)))
@@ -185,7 +217,10 @@
   :config (setq gofmt-command "goimports"))
 
 ;; Terminal & project tree ----------------------------------------------------
-(use-package vterm :commands vterm)
+(use-package vterm
+  :commands vterm
+  :custom
+  (vterm-shell (or (executable-find "zsh") "/usr/bin/zsh")))
 (use-package treemacs :defer t)
 (use-package treemacs-evil :after (treemacs evil))
 (use-package treemacs-projectile :after (treemacs projectile))

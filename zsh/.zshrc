@@ -15,7 +15,8 @@ fi
 ### -----------------------------
 export PATH="$HOME/.npm-global/bin:$PATH"
 export PATH="$HOME/.n/bin:$PATH"
-
+export PATH="$PATH:/usr/local/go/bin"
+export XDG_CONFIG_HOME="$HOME/.config"
 # Node - NVM
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
