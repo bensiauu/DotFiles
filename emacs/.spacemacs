@@ -34,7 +34,7 @@ This function should only modify configuration layer settings."
    dotspacemacs-configuration-layers
    '(go
      python
-     (osx :variables osx-swap-option-and-command t)
+     ;;(osx :variables osx-swap-option-and-command t)
      (llm-client :variables llm-client-enable-gptel t)
      ;; ----------------------------------------------------------------
      ;; Example of useful layers you may want to use right away.
@@ -600,28 +600,29 @@ This function is called at the very end of Spacemacs initialization."
                           centered-cursor-mode clean-aindent-mode closql
                           code-cells column-enforce-mode company company-anaconda
                           company-go concurrent ctable cython-mode dap-mode
-                          deferred define-word devdocs diminish dired-quick-sort
-                          disable-mouse dotenv-mode drag-stuff dumb-jump eat
-                          edit-indirect elisp-def elisp-demos elisp-slime-nav
-                          ellama emacsql emr epc esh-help eshell-prompt-extras
-                          eshell-z eval-sexp-fu evil-anzu evil-args
-                          evil-cleverparens evil-collection evil-easymotion
-                          evil-escape evil-evilified-state evil-exchange
-                          evil-goggles evil-iedit-state evil-indent-plus evil-lion
-                          evil-lisp-state evil-matchit evil-mc evil-nerd-commenter
-                          evil-numbers evil-org evil-surround evil-textobj-line
-                          evil-tutor evil-unimpaired evil-visual-mark-mode
-                          evil-visualstar expand-region eyebrowse fancy-battery
-                          flycheck flycheck-elsa flycheck-golangci-lint
-                          flycheck-package flycheck-pos-tip flyspell-correct
-                          flyspell-correct-helm forge ggtags gh-md ghub git-link
-                          git-messenger git-modes git-timemachine
-                          gitignore-templates gntp gnuplot go-eldoc go-fill-struct
-                          go-gen-test go-guru go-impl go-mode go-rename go-tag
-                          godoctor golden-ratio google-translate gptel helm-ag
-                          helm-c-yasnippet helm-comint helm-company helm-cscope
-                          helm-descbinds helm-git-grep helm-ls-git helm-lsp
-                          helm-make helm-mode-manager helm-org helm-org-rifle
+                          deferred define-word desktop-environment devdocs
+                          diminish dired-quick-sort disable-mouse dotenv-mode
+                          drag-stuff dumb-jump eat edit-indirect elisp-def
+                          elisp-demos elisp-slime-nav ellama emacsql emr epc
+                          esh-help eshell-prompt-extras eshell-z eval-sexp-fu
+                          evil-anzu evil-args evil-cleverparens evil-collection
+                          evil-easymotion evil-escape evil-evilified-state
+                          evil-exchange evil-goggles evil-iedit-state
+                          evil-indent-plus evil-lion evil-lisp-state evil-matchit
+                          evil-mc evil-nerd-commenter evil-numbers evil-org
+                          evil-surround evil-textobj-line evil-tutor
+                          evil-unimpaired evil-visual-mark-mode evil-visualstar
+                          expand-region exwm eyebrowse fancy-battery flycheck
+                          flycheck-elsa flycheck-golangci-lint flycheck-package
+                          flycheck-pos-tip flyspell-correct flyspell-correct-helm
+                          forge ggtags gh-md ghub git-link git-messenger git-modes
+                          git-timemachine gitignore-templates gntp gnuplot
+                          go-eldoc go-fill-struct go-gen-test go-guru go-impl
+                          go-mode go-rename go-tag godoctor golden-ratio
+                          google-translate gptel helm-ag helm-c-yasnippet
+                          helm-comint helm-company helm-cscope helm-descbinds
+                          helm-exwm helm-git-grep helm-ls-git helm-lsp helm-make
+                          helm-mode-manager helm-org helm-org-rifle
                           helm-projectile helm-purpose helm-pydoc helm-swoop
                           helm-themes helm-xref hide-comnt highlight-indentation
                           highlight-numbers highlight-parentheses hl-todo
@@ -650,8 +651,8 @@ This function is called at the very end of Spacemacs initialization."
                           treemacs-persp treemacs-projectile treepy undo-fu
                           undo-fu-session unfill uuidgen vi-tilde-fringe
                           volatile-highlights vterm vundo wgrep winum with-editor
-                          writeroom-mode ws-butler xcscope yaml yapfify yasnippet
-                          yasnippet-snippets)))
+                          writeroom-mode ws-butler xcscope xelb yaml yapfify
+                          yasnippet yasnippet-snippets)))
   (custom-set-faces
    ;; custom-set-faces was added by Custom.
    ;; If you edit it by hand, you could mess it up, so be careful.
