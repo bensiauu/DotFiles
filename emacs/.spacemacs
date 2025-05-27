@@ -32,10 +32,14 @@ This function should only modify configuration layer settings."
 
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
-   '(go
+   '(yaml
+     go
      python
      ;;(osx :variables osx-swap-option-and-command t)
      (llm-client :variables llm-client-enable-gptel t)
+     (evil-snipe :variables evil-snipe-scope 'visible)
+     xclipboard
+
      ;; ----------------------------------------------------------------
      ;; Example of useful layers you may want to use right away.
      ;; Uncomment some layer names and press `SPC f e R' (Vim style) or
@@ -610,7 +614,7 @@ This function is called at the very end of Spacemacs initialization."
                           evil-exchange evil-goggles evil-iedit-state
                           evil-indent-plus evil-lion evil-lisp-state evil-matchit
                           evil-mc evil-nerd-commenter evil-numbers evil-org
-                          evil-surround evil-textobj-line evil-tutor
+                          evil-snipe evil-surround evil-textobj-line evil-tutor
                           evil-unimpaired evil-visual-mark-mode evil-visualstar
                           expand-region exwm eyebrowse fancy-battery flycheck
                           flycheck-elsa flycheck-golangci-lint flycheck-package
@@ -651,8 +655,8 @@ This function is called at the very end of Spacemacs initialization."
                           treemacs-persp treemacs-projectile treepy undo-fu
                           undo-fu-session unfill uuidgen vi-tilde-fringe
                           volatile-highlights vterm vundo wgrep winum with-editor
-                          writeroom-mode ws-butler xcscope xelb yaml yapfify
-                          yasnippet yasnippet-snippets)))
+                          writeroom-mode ws-butler xcscope xelb yaml yaml-mode
+                          yapfify yasnippet yasnippet-snippets)))
   (custom-set-faces
    ;; custom-set-faces was added by Custom.
    ;; If you edit it by hand, you could mess it up, so be careful.
