@@ -32,10 +32,14 @@ This function should only modify configuration layer settings."
 
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
-   '(yaml
+   '(csv
+     yaml
      go
-     python
-     ;;(osx :variables osx-swap-option-and-command t)
+     (python :variables
+             python-format-on-save t
+             python-formatter "black"
+             python-sort-imports-on-save t)
+     (osx :variables osx-swap-option-and-command t)
      (llm-client :variables llm-client-enable-gptel t)
      (evil-snipe :variables evil-snipe-scope 'visible)
      xclipboard
@@ -95,13 +99,14 @@ This function should only modify configuration layer settings."
 This function is called at the very beginning of Spacemacs startup,
 before layer configuration.
 It should only modify the values of Spacemacs settings."
+
+  (setq evil-want-keybinding nil)
   ;; This setq-default sexp is an exhaustive list of all the supported
   ;; spacemacs settings.
   (setq-default
    ;; Maximum allowed time in seconds to contact an ELPA repository.
    ;; (default 5)
    dotspacemacs-elpa-timeout 5
-
 
    ;; Set `gc-cons-threshold' and `gc-cons-percentage' when startup finishes.
    ;; This is an advanced option and should not be changed unless you suspect
@@ -582,6 +587,13 @@ before packages are loaded."
   (setq shell-file-name "/bin/zsh"
         shell-command-switch "-c")
   (setq explicit-shell-file-name "/bin/zsh")
+
+  (setq-default fill-column 80) ; Set this to your desired line length
+  (add-hook 'text-mode-hook 'auto-fill-mode) ; Enable auto-fill for text modes
+  (add-hook 'prog-mode-hook
+            (lambda ()
+              (setq fill-column 79) ; Set this to your desired line length for programming modes
+              (auto-fill-mode 1))) ; Enable auto-fill for programming modes
   )
 
 
@@ -603,12 +615,12 @@ This function is called at the very end of Spacemacs initialization."
                           auto-yasnippet blacken browse-at-remote bui
                           centered-cursor-mode clean-aindent-mode closql
                           code-cells column-enforce-mode company company-anaconda
-                          company-go concurrent ctable cython-mode dap-mode
-                          deferred define-word desktop-environment devdocs
-                          diminish dired-quick-sort disable-mouse dotenv-mode
-                          drag-stuff dumb-jump eat edit-indirect elisp-def
-                          elisp-demos elisp-slime-nav ellama emacsql emr epc
-                          esh-help eshell-prompt-extras eshell-z eval-sexp-fu
+                          company-go concurrent csv-mode ctable cython-mode
+                          dap-mode deferred define-word desktop-environment
+                          devdocs diminish dired-quick-sort disable-mouse
+                          dotenv-mode drag-stuff dumb-jump eat edit-indirect
+                          elisp-def elisp-demos elisp-slime-nav ellama emacsql emr
+                          epc esh-help eshell-prompt-extras eshell-z eval-sexp-fu
                           evil-anzu evil-args evil-cleverparens evil-collection
                           evil-easymotion evil-escape evil-evilified-state
                           evil-exchange evil-goggles evil-iedit-state
