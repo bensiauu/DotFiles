@@ -39,10 +39,12 @@ This function should only modify configuration layer settings."
              python-format-on-save t
              python-formatter "black"
              python-sort-imports-on-save t)
-     (osx :variables osx-swap-option-and-command t)
+     docker
      (llm-client :variables llm-client-enable-gptel t)
      (evil-snipe :variables evil-snipe-scope 'visible)
      xclipboard
+     (when (eq system-type 'darwin) (osx :variables osx-swap-option-and-command
+                                         t))
 
      ;; ----------------------------------------------------------------
      ;; Example of useful layers you may want to use right away.
@@ -587,6 +589,7 @@ before packages are loaded."
   (setq shell-file-name "/bin/zsh"
         shell-command-switch "-c")
   (setq explicit-shell-file-name "/bin/zsh")
+  (setq shell-default-shell 'vterm)
 
   (setq-default fill-column 80) ; Set this to your desired line length
   (add-hook 'text-mode-hook 'auto-fill-mode) ; Enable auto-fill for text modes
@@ -594,7 +597,11 @@ before packages are loaded."
             (lambda ()
               (setq fill-column 79) ; Set this to your desired line length for programming modes
               (auto-fill-mode 1))) ; Enable auto-fill for programming modes
+  (let ((gptel-config-file (expand-file-name "gptel-config.el"
+                                             user-emacs-directory)))
+    (when (file-exists-p gptel-config-file) (load gptel-config-file)))
   )
+
 
 
 ;; Do not write anything past this comment. This is where Emacs will
@@ -610,31 +617,32 @@ This function is called at the very end of Spacemacs initialization."
    ;; Your init file should contain only one such instance.
    ;; If there is more than one, they won't work right.
    '(package-selected-packages
-     '(ace-jump-helm-line ace-link aggressive-indent alert all-the-icons
+     '(ace-jump-helm-line ace-link aggressive-indent aio alert all-the-icons
                           anaconda-mode auto-compile auto-highlight-symbol
                           auto-yasnippet blacken browse-at-remote bui
                           centered-cursor-mode clean-aindent-mode closql
                           code-cells column-enforce-mode company company-anaconda
                           company-go concurrent csv-mode ctable cython-mode
                           dap-mode deferred define-word desktop-environment
-                          devdocs diminish dired-quick-sort disable-mouse
-                          dotenv-mode drag-stuff dumb-jump eat edit-indirect
-                          elisp-def elisp-demos elisp-slime-nav ellama emacsql emr
-                          epc esh-help eshell-prompt-extras eshell-z eval-sexp-fu
-                          evil-anzu evil-args evil-cleverparens evil-collection
-                          evil-easymotion evil-escape evil-evilified-state
-                          evil-exchange evil-goggles evil-iedit-state
-                          evil-indent-plus evil-lion evil-lisp-state evil-matchit
-                          evil-mc evil-nerd-commenter evil-numbers evil-org
-                          evil-snipe evil-surround evil-textobj-line evil-tutor
+                          devdocs diminish dired-quick-sort disable-mouse docker
+                          dockerfile-mode dotenv-mode drag-stuff dumb-jump eat
+                          edit-indirect elisp-def elisp-demos elisp-slime-nav
+                          ellama emacsql emr epc esh-help eshell-prompt-extras
+                          eshell-z eval-sexp-fu evil-anzu evil-args
+                          evil-cleverparens evil-collection evil-easymotion
+                          evil-escape evil-evilified-state evil-exchange
+                          evil-goggles evil-iedit-state evil-indent-plus
+                          evil-lion evil-lisp-state evil-matchit evil-mc
+                          evil-nerd-commenter evil-numbers evil-org evil-snipe
+                          evil-surround evil-textobj-line evil-tutor
                           evil-unimpaired evil-visual-mark-mode evil-visualstar
                           expand-region exwm eyebrowse fancy-battery flycheck
                           flycheck-elsa flycheck-golangci-lint flycheck-package
                           flycheck-pos-tip flyspell-correct flyspell-correct-helm
-                          forge ggtags gh-md ghub git-link git-messenger git-modes
-                          git-timemachine gitignore-templates gntp gnuplot
-                          go-eldoc go-fill-struct go-gen-test go-guru go-impl
-                          go-mode go-rename go-tag godoctor golden-ratio
+                          forge ggtags gh-md ghub git-link git-messenger
+                          git-modes git-timemachine gitignore-templates gntp
+                          gnuplot go-eldoc go-fill-struct go-gen-test go-guru
+                          go-impl go-mode go-rename go-tag godoctor golden-ratio
                           google-translate gptel helm-ag helm-c-yasnippet
                           helm-comint helm-company helm-cscope helm-descbinds
                           helm-exwm helm-git-grep helm-ls-git helm-lsp helm-make
@@ -645,30 +653,31 @@ This function is called at the very end of Spacemacs initialization."
                           holy-mode htmlize hungry-delete hybrid-mode importmagic
                           indent-guide info+ inspector launchctl link-hint
                           live-py-mode llama llm load-env-vars log4e lorem-ipsum
-                          lsp-docker lsp-mode lsp-origami lsp-pyright lsp-treemacs
-                          lsp-ui macrostep magit magit-section markdown-mode
-                          markdown-toc multi-line multi-term multi-vterm mwim
-                          nameless nose open-junk-file org org-category-capture
-                          org-cliplink org-contrib org-download org-mime
-                          org-pomodoro org-present org-project-capture
-                          org-projectile org-rich-yank org-superstar orgit
-                          orgit-forge origami osx-clipboard osx-dictionary
-                          osx-trash overseer package-lint page-break-lines paradox
-                          password-generator pcre2el pet pip-requirements pipenv
-                          pippel plz plz-event-source plz-media-type poetry popwin
-                          pos-tip py-isort pydoc pyenv-mode pylookup pytest
-                          pythonic pyvenv quickrun rainbow-delimiters reformatter
-                          restart-emacs reveal-in-osx-finder ruff-format shell-pop
-                          smeargle space-doc spaceline spacemacs-purpose-popwin
+                          lsp-docker lsp-mode lsp-origami lsp-pyright
+                          lsp-treemacs lsp-ui macrostep magit magit-section
+                          markdown-mode markdown-toc multi-line multi-term
+                          multi-vterm mwim nameless nose open-junk-file org
+                          org-category-capture org-cliplink org-contrib
+                          org-download org-mime org-pomodoro org-present
+                          org-project-capture org-projectile org-rich-yank
+                          org-superstar orgit orgit-forge origami osx-clipboard
+                          osx-dictionary osx-trash overseer package-lint
+                          page-break-lines paradox password-generator pcre2el pet
+                          pip-requirements pipenv pippel plz plz-event-source
+                          plz-media-type poetry popwin pos-tip py-isort pydoc
+                          pyenv-mode pylookup pytest pythonic pyvenv quickrun
+                          rainbow-delimiters reformatter restart-emacs
+                          reveal-in-osx-finder ruff-format shell-pop smeargle
+                          space-doc spaceline spacemacs-purpose-popwin
                           spacemacs-whitespace-cleanup sphinx-doc
                           string-edit-at-point string-inflection symbol-overlay
-                          symon term-cursor terminal-here toc-org transient
-                          treemacs-evil treemacs-icons-dired treemacs-magit
-                          treemacs-persp treemacs-projectile treepy undo-fu
-                          undo-fu-session unfill uuidgen vi-tilde-fringe
-                          volatile-highlights vterm vundo wgrep winum with-editor
-                          writeroom-mode ws-butler xcscope xelb yaml yaml-mode
-                          yapfify yasnippet yasnippet-snippets)))
+                          symon tablist term-cursor terminal-here toc-org
+                          transient treemacs-evil treemacs-icons-dired
+                          treemacs-magit treemacs-persp treemacs-projectile
+                          treepy undo-fu undo-fu-session unfill uuidgen
+                          vi-tilde-fringe volatile-highlights vterm vundo wgrep
+                          winum with-editor writeroom-mode ws-butler xcscope xelb
+                          yaml yaml-mode yapfify yasnippet yasnippet-snippets)))
   (custom-set-faces
    ;; custom-set-faces was added by Custom.
    ;; If you edit it by hand, you could mess it up, so be careful.
