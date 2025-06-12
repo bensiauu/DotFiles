@@ -32,7 +32,10 @@ This function should only modify configuration layer settings."
 
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
-   '(csv
+   '(react
+     html
+     javascript
+     csv
      yaml
      go
      (python :variables
@@ -43,9 +46,8 @@ This function should only modify configuration layer settings."
      (llm-client :variables llm-client-enable-gptel t)
      (evil-snipe :variables evil-snipe-scope 'visible)
      xclipboard
-     (when (eq system-type 'darwin) (osx :variables osx-swap-option-and-command
-                                         t))
-
+     (osx :variables osx-swap-option-and-command
+          t)
      ;; ----------------------------------------------------------------
      ;; Example of useful layers you may want to use right away.
      ;; Uncomment some layer names and press `SPC f e R' (Vim style) or
@@ -59,7 +61,13 @@ This function should only modify configuration layer settings."
      lsp
      markdown
      multiple-cursors
-     org
+     (org :variables
+          org-enable-notifications t
+          org-start-notification-daemon-on-startup t
+          org-enable-github-support t
+          org-enable-org-journal-support t
+          org-project-capture-projects-file "~/org/projects.org"
+          )
      (shell :variables
             shell-default-height 30
             shell-default-position 'bottom
@@ -551,7 +559,7 @@ It should only modify the values of Spacemacs settings."
    ;; Run `spacemacs/prettify-org-buffer' when
    ;; visiting README.org files of Spacemacs.
    ;; (default nil)
-   dotspacemacs-pretty-docs nil
+   dotspacemacs-pretty-docs t
 
    ;; If nil the home buffer shows the full path of agenda items
    ;; and todos. If non-nil only the file name is shown.
@@ -600,22 +608,12 @@ before packages are loaded."
   (let ((gptel-config-file (expand-file-name "gptel-config.el"
                                              user-emacs-directory)))
     (when (file-exists-p gptel-config-file) (load gptel-config-file)))
-  )
-
-
-
-;; Do not write anything past this comment. This is where Emacs will
-;; auto-generate custom variable definitions.
-(defun dotspacemacs/emacs-custom-settings ()
-  "Emacs custom settings.
-This is an auto-generated function, do not modify its content directly, use
-Emacs customize menu instead.
-This function is called at the very end of Spacemacs initialization."
   (custom-set-variables
    ;; custom-set-variables was added by Custom.
    ;; If you edit it by hand, you could mess it up, so be careful.
    ;; Your init file should contain only one such instance.
    ;; If there is more than one, they won't work right.
+   '(org-agenda-files '("~/org/projects.org"))
    '(package-selected-packages
      '(ace-jump-helm-line ace-link aggressive-indent aio alert all-the-icons
                           anaconda-mode auto-compile auto-highlight-symbol
@@ -658,14 +656,15 @@ This function is called at the very end of Spacemacs initialization."
                           markdown-mode markdown-toc multi-line multi-term
                           multi-vterm mwim nameless nose open-junk-file org
                           org-category-capture org-cliplink org-contrib
-                          org-download org-mime org-pomodoro org-present
-                          org-project-capture org-projectile org-rich-yank
-                          org-superstar orgit orgit-forge origami osx-clipboard
-                          osx-dictionary osx-trash overseer package-lint
-                          page-break-lines paradox password-generator pcre2el pet
-                          pip-requirements pipenv pippel plz plz-event-source
-                          plz-media-type poetry popwin pos-tip py-isort pydoc
-                          pyenv-mode pylookup pytest pythonic pyvenv quickrun
+                          org-download org-journal org-mime org-pomodoro
+                          org-present org-project-capture org-projectile
+                          org-rich-yank org-superstar org-wild-notifier orgit
+                          orgit-forge origami osx-clipboard osx-dictionary
+                          osx-trash overseer ox-gfm package-lint page-break-lines
+                          paradox password-generator pcre2el pet pip-requirements
+                          pipenv pippel plz plz-event-source plz-media-type
+                          poetry popwin pos-tip py-isort pydoc pyenv-mode
+                          pylookup pytest pythonic pyvenv quickrun
                           rainbow-delimiters reformatter restart-emacs
                           reveal-in-osx-finder ruff-format shell-pop smeargle
                           space-doc spaceline spacemacs-purpose-popwin
@@ -685,3 +684,17 @@ This function is called at the very end of Spacemacs initialization."
    ;; If there is more than one, they won't work right.
    )
   )
+(setq org-journal-dir "~/org/journal/")
+
+
+)
+
+
+
+;; Do not write anything past this comment. This is where Emacs will
+;; auto-generate custom variable definitions.
+(defun dotspacemacs/emacs-custom-settings ()
+  "Emacs custom settings.
+This is an auto-generated function, do not modify its content directly, use
+Emacs customize menu instead.
+This function is called at the very end of Spacemacs initialization."
