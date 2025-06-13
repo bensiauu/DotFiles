@@ -19,6 +19,7 @@ export PATH="$PATH:/usr/local/go/bin"
 export PATH="$HOME/go/bin:$PATH"
 export XDG_CONFIG_HOME="$HOME/.config"
 export PATH="$HOME/.local/bin:$PATH"
+export EDITOR="emacs -nw"
 # Node - NVM
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"

@@ -98,8 +98,8 @@
 
 ;; 1) Use rjsx-mode for .jsx, and typescript-tsx-mode for .tsx
 ;;    (if you prefer web-mode, see alternative below)
-(add-to-list 'auto-mode-alist '("\\.jsx\\'" . js-jsx-mode))
-(add-to-list 'auto-mode-alist '("\\.tsx\\'"  . typescript-tsx-mode))
+(add-to-list 'auto-mode-alist '("\\.jsx?\\'" . js-jsx-mode))
+(add-to-list 'auto-mode-alist '("\\.tsx?\\'"  . typescript-tsx-mode))
 
 ;; 2) Start LSP automatically in those modes
 ;;    `lsp-deferred` will defer server startup until buffer is visible.
