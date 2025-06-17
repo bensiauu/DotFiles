@@ -40,9 +40,9 @@ if command -v pyenv 1>/dev/null 2>&1; then
   eval "$(pyenv init -)"
 fi
 
-# make brew installed gcc ahead of macOS native symlinked gcc
-export PATH="$(brew --prefix gcc)/bin:$PATH"
-export CC=gcc-13 
+# make brew installed gcc ahead of macOS native symlinked gcc (only uncomment this when running in macos and building emacs)
+# export PATH="$(brew --prefix gcc)/bin:$PATH"
+# export CC=gcc-13 
 ### -----------------------------
 ### Aliases
 ### -----------------------------
