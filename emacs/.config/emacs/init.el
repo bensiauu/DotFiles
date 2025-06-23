@@ -263,7 +263,8 @@
 	 (typescript-mode . lsp)
 	 (web-mode . lsp)
 	 (tsx-ts-mode . lsp)
-	 (js-json-mode . lsp))
+	 (js-json-mode . lsp)
+	 (yaml-ts-mode . lsp))
   :commands lsp
   :init
   (setq lsp-keymap-prefix "C-c l")
@@ -337,13 +338,18 @@
         '(("jsx" . "\\.js[x]?\\'")
           ("tsx" . "\\.ts[x]?\\'"))))
 
+(use-package yaml-ts-mode
+  :mode (("\\.yaml\\'" . yaml-ts-mode)
+	 ("\\.yml\\'" . yaml-ts-mode)))
+
 (when (fboundp 'treesit-available-p)
   (setq major-mode-remap-alist
         '((js-mode . js-ts-mode)
           (typescript-mode . tsx-ts-mode)
           (json-mode . json-ts-mode)
           (css-mode . css-ts-mode)
-          (python-mode . python-ts-mode))))
+          (python-mode . python-ts-mode)
+	  (yaml-mode . yaml-ts-mode))))
 
 ;; -------------------------------------------------------------------
 ;; Format-on-save via lsp-format-buffer for ALL prog modes
