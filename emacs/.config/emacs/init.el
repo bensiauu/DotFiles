@@ -370,3 +370,58 @@
             (add-hook 'before-save-hook #'my/lsp-format-on-save-if-enabled
                       nil   ;; append?
                       t)))  ;; T => local to this buffer
+
+;; -------------------------------------------------------------------
+;; Evil Mode integration
+;; -------------------------------------------------------------------
+(setq evil-want-integration t
+        evil-want-keybinding nil     ; let evil-collection handle this
+	evil-want-C-u-scroll t
+	evil-want-C-i-jump t
+        evil-undo-system 'undo-redo) ; modern undo
+(use-package goto-chg)
+(use-package evil
+  :config
+  (evil-mode 1))
+
+;; Instant “jk” → Normal state (works everywhere, incl. vterm)
+(use-package key-chord
+  :after evil
+  :config
+  (key-chord-mode 1)
+  (key-chord-define evil-insert-state-map "jk" #'evil-normal-state))
+
+;; Extra keybindings for built-ins & vterm, magit, etc.
+(use-package evil-collection
+  :after evil
+  :config
+  (evil-collection-init))
+
+;; ── Leader-key bindings with general.el ───────────────────────────
+(use-package general
+  :after evil
+  :config
+  ;; Space is my leader in Normal/Visual/Emacs states
+  (general-create-definer my/leader
+    :states '(normal visual emacs)
+    :keymaps 'override
+    :prefix "SPC"
+    :non-normal-prefix "M-SPC")
+
+  ;; top-level leader actions
+  (my/leader
+    "f"  '(:ignore t :which-key "files")
+    "fs" '(save-buffer :which-key "save file")
+    "ff" '(consult-find :which-key "find file")
+
+    "g"  '(:ignore t :which-key "git")
+    "gg" '(magit-status :which-key "Magit status"))
+
+  ;; “goto” keys under g-prefix (no leader)
+  (general-define-key
+   :states 'normal
+   "gd"   'lsp-find-definition
+   "gr"   'lsp-find-references
+   "K"    'lsp-ui-doc-glance))
+
+;;; init.el ends here
