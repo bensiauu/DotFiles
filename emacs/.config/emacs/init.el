@@ -292,6 +292,18 @@
 ;; -------------------------------------------------------------------
 
 (use-package python-mode)
+(use-package lsp-pyright
+  :after lsp-mode
+  :init
+  ;; use :hook so both python-mode *and* python-ts-mode work
+  (setq lsp-pyright-disable-language-service nil   ; keep completions etc.
+        lsp-pyright-disable-organize-imports nil)  ; let lsp-format-on-save run
+  :hook ((python-mode . (lambda ()
+                          (require 'lsp-pyright)   ; register the client
+                          (lsp-deferred)))          ; or just (lsp)
+         (python-ts-mode . (lambda ()
+                             (require 'lsp-pyright)
+                             (lsp-deferred)))))
 ;; ── pyvenv: auto-activate .venv / venv on python-mode ───────────────
 (use-package pyvenv
   :init
@@ -413,15 +425,25 @@
     "f"  '(:ignore t :which-key "files")
     "fs" '(save-buffer :which-key "save file")
     "ff" '(consult-find :which-key "find file")
+    "fr" '(consult-recent-file :which-key "find recent file")
+    "fb" '(consult-buffer :which-key "find buffer")
+
+    "b" '(:ignore t :which-key "buffers")
+    "bp" '(previous-buffer :which-key "buffer previous")
+    "bn" '(next-buffer :which-key "buffer next")
+    "bd" '(kill-buffer :which-key "buffer delete")
 
     "g"  '(:ignore t :which-key "git")
     "gg" '(magit-status :which-key "Magit status"))
 
-  ;; “goto” keys under g-prefix (no leader)
   (general-define-key
    :states 'normal
    "gd"   'lsp-find-definition
    "gr"   'lsp-find-references
-   "K"    'lsp-ui-doc-glance))
+   "K"    'lsp-ui-doc-glance
+   "C-l" 'evil-window-right
+   "C-h" 'evil-window-left
+   "C-j" 'evil-window-down
+   "C-k" 'evil-window-up))
 
 ;;; init.el ends here
