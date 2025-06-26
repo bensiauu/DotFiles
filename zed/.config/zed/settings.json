@@ -7,7 +7,7 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
-  "assistant": {
+  "agent": {
     "default_model": {
       "provider": "copilot_chat",
       "model": "gpt-4o"
@@ -25,8 +25,8 @@
   "buffer_font_size": 16,
   "theme": {
     "mode": "system",
-    "light": "Tokyo Night Light",
-    "dark": "Gruvbox Dark Hard"
+    "light": "Catppuccin Frappé",
+    "dark": "Catppuccin Frappé"
   },
   "buffer_font_family": "FiraCode Nerd Font Mono",
   "buffer_font_fallbacks": ["FiraCode Nerd Font Mono"],

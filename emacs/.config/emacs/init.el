@@ -361,7 +361,8 @@
           (json-mode . json-ts-mode)
           (css-mode . css-ts-mode)
           (python-mode . python-ts-mode)
-	  (yaml-mode . yaml-ts-mode))))
+	  (yaml-mode . yaml-ts-mode)
+	  (dockerfile-mode . dockerfile-ts-mode))))
 
 ;; -------------------------------------------------------------------
 ;; Format-on-save via lsp-format-buffer for ALL prog modes
