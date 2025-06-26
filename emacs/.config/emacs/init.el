@@ -8,7 +8,7 @@
       '(("gnu"   . "https://elpa.gnu.org/packages/")
         ("melpa" . "https://melpa.org/packages/")))
 (package-initialize)
-
+(setq evil-want-keybinding nil)
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
