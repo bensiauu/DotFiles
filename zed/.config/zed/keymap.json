@@ -28,8 +28,7 @@
       "space b k": "pane::CloseActiveItem",
       "space f s": "workspace::Save",
       "space c a": "editor::ToggleCodeActions",
-      "g r": "editor::FindAllReferences",
-      "[ b": "editor::Backtab"
+      "g r": "editor::FindAllReferences"
     }
   },
   {
@@ -63,7 +62,12 @@
     "bindings": {
       "space e": "workspace::ToggleLeftDock",
       "ctrl-h": "workspace::ActivatePaneLeft",
-      "ctrl-l": "workspace::ActivatePaneRight",
+      "ctrl-l": "workspace::ActivatePaneRight"
+    }
+  },
+  {
+    "context": "ProjectPanel && not_editing",
+    "bindings": {
       // File operations
       "a": "project_panel::NewFile",
       "A": "project_panel::NewDirectory",
