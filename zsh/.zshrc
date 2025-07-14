@@ -1,3 +1,15 @@
+# Python - pyenv
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+export PIPENV_PYTHON="$PYENV_ROOT/shims/python"
+eval "$(pyenv init --path)"
+eval "$(pyenv init -)"
+if command -v pyenv 1>/dev/null 2>&1; then
+  export PATH="$PYENV_ROOT/bin:$PATH"
+  export PYENV_SHELL=zsh
+  eval "$(pyenv init -)"
+fi
+
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
@@ -19,7 +31,7 @@ export PATH="$PATH:/usr/local/go/bin"
 export PATH="$HOME/go/bin:$PATH"
 export XDG_CONFIG_HOME="$HOME/.config"
 export PATH="$HOME/.local/bin:$PATH"
-export EDITOR="emacs -nw"
+export EDITOR="nvim"
 # Node - NVM
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
@@ -27,18 +39,6 @@ export NVM_DIR="$HOME/.nvm"
 
 # Node - n
 export N_PREFIX="$HOME/.n"
-
-# Python - pyenv
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-export PIPENV_PYTHON="$PYENV_ROOT/shims/python"
-eval "$(pyenv init --path)"
-eval "$(pyenv init -)"
-if command -v pyenv 1>/dev/null 2>&1; then
-  export PATH="$PYENV_ROOT/bin:$PATH"
-  export PYENV_SHELL=zsh
-  eval "$(pyenv init -)"
-fi
 
 # make brew installed gcc ahead of macOS native symlinked gcc (only uncomment this when running in macos and building emacs)
 # export PATH="$(brew --prefix gcc)/bin:$PATH"

@@ -91,25 +91,17 @@
   ;; enable visual-line-mode for nicer wrapping
   (add-hook 'nov-mode-hook #'visual-line-mode)
   ;; fill paragraphs at window width
-  (setq nov-text-width t)
-  ;; adjust how images are handled (if you like them inline)
-  ;; (setq nov-image-dir "/path/to/epub-temp-images")
-  )
-
-;; 1) Use rjsx-mode for .jsx, and typescript-tsx-mode for .tsx
-;;    (if you prefer web-mode, see alternative below)
-(add-to-list 'auto-mode-alist '("\\.jsx?\\'" . js-jsx-mode))
-(add-to-list 'auto-mode-alist '("\\.tsx?\\'"  . typescript-tsx-mode))
-
-;; 2) Start LSP automatically in those modes
-;;    `lsp-deferred` will defer server startup until buffer is visible.
-(add-hook 'js-jsx-mode-hook           #'lsp-deferred)
-(add-hook 'typescript-mode-hook     #'lsp-deferred)
-(add-hook 'typescript-mode-hook #'lsp-deferred)
-
-;; 3) (Optional) ensure LSP uses the right language-id
-(after! lsp-mode
-  (add-to-list 'lsp-language-id-configuration '(typescript-tsx-mode . "typescriptreact")))
+  (setq nov-text-width t))
+;; (after! lsp-mode
+;;   ;; Tell lsp-mode how to launch Angular’s language server
+;;   (setq lsp-clients-angular-language-server-command
+;;         ;; here we use `npx` so you don’t have to hard-code a path
+;;         '("npx" "angular-language-server" "--stdio")))
 
 
 (setq bible-gateway-bible-version "ESV")
+(defun insert-current-date ()
+  "Insert current date as an inactive timestamp"
+  (interactive)
+  (insert (format-time-string "%Y-%m-%d %a")))
+(global-set-key (kbd "C-c i") 'insert-current-date)
