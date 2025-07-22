@@ -105,3 +105,9 @@
   (interactive)
   (insert (format-time-string "%Y-%m-%d %a")))
 (global-set-key (kbd "C-c i") 'insert-current-date)
+
+;; groovy-mode for jenkinsfiles
+(after! groovy-mode
+  (add-to-list 'auto-mode-alist '("Jenkinsfile\\'" . groovy-mode))
+  (add-to-list 'auto-mode-alist '("\\.jenkinsfile\\'" . groovy-mode))
+  )
