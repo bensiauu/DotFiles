@@ -57,3 +57,6 @@
 
 ;; groovy-mode
 (package! groovy-mode)
+;; claude code integration
+(package! claude-code-ide
+  :recipe (:host github :repo "manzaltu/claude-code-ide.el"))

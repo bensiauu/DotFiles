@@ -414,7 +414,6 @@
 (use-package general
   :after evil
   :config
-  ;; Space is my leader in Normal/Visual/Emacs states
   (general-create-definer my/leader
     :states '(normal visual emacs)
     :keymaps 'override
