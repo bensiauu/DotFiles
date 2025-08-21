@@ -53,8 +53,8 @@
 
 ;; And make sure Org-roam (v2) is present
 (package! org-roam)
+;; epub support
 (package! nov)
-
 ;; groovy-mode
 (package! groovy-mode)
 ;; claude code integration
