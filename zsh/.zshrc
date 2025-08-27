@@ -356,6 +356,11 @@ zinit light hlissner/zsh-autopair
 # p10k prompt
 zinit light romkatv/powerlevel10k
 
+# vi mode
+export ZVM_VI_ESCAPE_BINDKEY=jk
+zinit ice depth=1
+zinit light jeffreytse/zsh-vi-mode
+
 # Fzf integration (if installed)
 if command -v fzf &>/dev/null; then
   [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
