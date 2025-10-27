@@ -21,8 +21,7 @@
 ;; See 'C-h v doom-font' for documentation and more examples of what they
 ;; accept. For example:
 ;;
-(setq doom-font (font-spec :family "FiraCode Nerd Font Mono" :size 16 :weight 'semi-bold)
-      )
+(setq doom-font (font-spec :family "FiraCode Nerd Font Mono" :size 14 :weight 'semi-light))
 ;;
 ;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
 ;; up, `M-x eval-region' to execute elisp code, and 'M-x doom/reload-font' to
@@ -32,7 +31,7 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'ef-spring)
+(setq doom-theme 'doom-one)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -40,7 +39,7 @@
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/org/")
+(setq org-directory "~/Documents/org/")
 
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
@@ -74,40 +73,20 @@
 ;;
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
+(after! org
+  ;; Define your inbox template
+  (let ((inbox-template
+         '("i" "Inbox" entry
+           (file "~/Documents/org/inbox.org")
+           "* %?\nEntered on %U\n")))
 
-;; Tell evil-escape to use “jk” instead of “fd”.
-(after! evil-escape
-  (setq evil-escape-key-sequence "jk"
-        evil-escape-delay        0.2     ; how fast you must type “jk”
-        )
-  ;; Make sure evil-escape-mode is on everywhere
-  (evil-escape-mode +1))
+    ;; Prepend it to org-capture-templates if not already present
+    (add-to-list 'org-capture-templates inbox-template t)
 
-;; Tell Emacs to open .epub files in nov-mode
-(add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
+    ;; Move inbox to the front of the list (make it first)
+    (setq org-capture-templates
+          (cons inbox-template
+                (remove inbox-template org-capture-templates)))))
 
-;; Optional: make nov-mode more comfortable
-(after! nov
-  ;; enable visual-line-mode for nicer wrapping
-  (add-hook 'nov-mode-hook #'visual-line-mode)
-  ;; fill paragraphs at window width
-  (setq nov-text-width t))
-;; (after! lsp-mode
-;;   ;; Tell lsp-mode how to launch Angular’s language server
-;;   (setq lsp-clients-angular-language-server-command
-;;         ;; here we use `npx` so you don’t have to hard-code a path
-;;         '("npx" "angular-language-server" "--stdio")))
-
-
-(setq bible-gateway-bible-version "ESV")
-(defun insert-current-date ()
-  "Insert current date as an inactive timestamp"
-  (interactive)
-  (insert (format-time-string "%Y-%m-%d %a")))
-(global-set-key (kbd "C-c i") 'insert-current-date)
-
-;; groovy-mode for jenkinsfiles
-(after! groovy-mode
-  (add-to-list 'auto-mode-alist '("Jenkinsfile\\'" . groovy-mode))
-  (add-to-list 'auto-mode-alist '("\\.jenkinsfile\\'" . groovy-mode))
-  )
+;; Make it the default template for Doom’s SPC X
+(setq +org-capture-default-template "i")
