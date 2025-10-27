@@ -21,7 +21,7 @@
 ;; See 'C-h v doom-font' for documentation and more examples of what they
 ;; accept. For example:
 ;;
-(setq doom-font (font-spec :family "FiraCode Nerd Font Mono" :size 14 :weight 'semi-light))
+(setq doom-font (font-spec :family "FiraCode Nerd Font Mono" :size 16 :weight 'semi-light))
 ;;
 ;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
 ;; up, `M-x eval-region' to execute elisp code, and 'M-x doom/reload-font' to
@@ -31,7 +31,7 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-one)
+(setq doom-theme 'doom-snazzy)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -40,7 +40,8 @@
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
 (setq org-directory "~/Documents/org/")
-
+(setq org-agenda-files (list (expand-file-name "inbox.org" org-directory)
+                             (expand-file-name "projects/" org-directory)))
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
@@ -90,3 +91,35 @@
 
 ;; Make it the default template for Doom’s SPC X
 (setq +org-capture-default-template "i")
+
+;; paste images
+(defun my/paste-image-from-clipboard (&optional name)
+  "Save image from clipboard to ./images/ and insert Org link."
+  (interactive "sImage name (default: timestamp): ")
+  (let* ((filename (if (string-empty-p name)
+                       (format-time-string "img-%Y%m%d-%H%M%S")
+                     name))
+         (dir (expand-file-name "images" (projectile-project-root)))
+         (filepath (expand-file-name (concat filename ".png") dir)))
+    (unless (file-directory-p dir)
+      (make-directory dir t))
+    (cond
+     ((executable-find "pngpaste")
+      (shell-command (format "pngpaste %s" (shell-quote-argument filepath))))
+     ((executable-find "wl-paste")
+      (shell-command (format "wl-paste --type image/png > %s" (shell-quote-argument filepath))))
+     ((executable-find "xclip")
+      (shell-command (format "xclip -selection clipboard -t image/png -o > %s" (shell-quote-argument filepath))))
+     (t (user-error "No supported clipboard image tool found")))
+    (when (file-exists-p filepath)
+      (insert (format "[[file:%s]]" (file-relative-name filepath)))
+      (when (derived-mode-p 'org-mode)
+        (org-display-inline-images))
+      (message "Saved image: %s" filepath))))
+
+
+
+;; (use-package! exec-path-from-shell
+;;   :config
+;;   (setq exec-path-from-shell-variables '("PATH" "GOPATH" "GOROOT"))
+;;   (exec-path-from-shell-initialize))
