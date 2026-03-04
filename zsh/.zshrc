@@ -1,3 +1,10 @@
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
 # ─────────────────────────────────────────────
 # Environment
 # ─────────────────────────────────────────────
@@ -7,12 +14,9 @@ export XDG_CONFIG_HOME="$HOME/.config"
 export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$HOME/.n/bin:$HOME/go/bin:/usr/local/go/bin:$PATH"
 
 # Python (pyenv)
-export PYENV_ROOT="$HOME/.pyenv"
-if command -v pyenv >/dev/null 2>&1; then
-  export PATH="$PYENV_ROOT/bin:$PATH"
-  eval "$(pyenv init --path)"
-  eval "$(pyenv init -)"
-fi
+export PATH="$HOME/.pyenv/bin:$PATH"
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"  # if you use pyenv-virtualenv
 
 # Node (lazy-load NVM)
 export NVM_DIR="$HOME/.nvm"
@@ -22,9 +26,9 @@ npm()  { unfunction npm;   nvm use default >/dev/null; npm "$@"; }
 npx()  { unfunction npx;   nvm use default >/dev/null; npx "$@"; }
 
 # Compiler paths (macOS Homebrew GCC)
-export LIBRARY_PATH="/opt/homebrew/lib/gcc/current:$LIBRARY_PATH"
-export CC="/opt/homebrew/bin/gcc-15"
-export CXX="/opt/homebrew/bin/g++-15"
+# export LIBRARY_PATH="/opt/homebrew/lib/gcc/current:$LIBRARY_PATH"
+# export CC="/opt/homebrew/bin/gcc-15"
+# export CXX="/opt/homebrew/bin/g++-15"
 
 # ─────────────────────────────────────────────
 # Aliases
@@ -35,6 +39,7 @@ alias gl="git log --oneline --graph --decorate"
 alias ..="cd .."
 alias ...="cd ../.."
 alias ....="cd ../../.."
+# alias cd="z"  # Moved to zoxide initialization block (line 124)
 
 # Modern tools with graceful fallback
 if command -v eza &>/dev/null; then
@@ -54,7 +59,10 @@ elif command -v bat &>/dev/null; then
   alias cat="bat --style=plain --paging=never"
 fi
 
-command -v rg &>/dev/null && alias grep="rg --color=auto"
+if command -v rg &>/dev/null; then
+  alias grep="rg --color=auto"
+fi
+
 command -v fdfind &>/dev/null && alias fd="fdfind"
 
 # ─────────────────────────────────────────────
@@ -116,7 +124,12 @@ zinit light jeffreytse/zsh-vi-mode
 
 # Tool integrations
 command -v fzf &>/dev/null && [[ -f ~/.fzf.zsh ]] && source ~/.fzf.zsh
-command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
+
+if command -v zoxide &>/dev/null; then
+  eval "$(zoxide init zsh)"
+  alias cd="z"
+fi
+
 command -v ng &>/dev/null && source <(ng completion script)
 
 # ─────────────────────────────────────────────
