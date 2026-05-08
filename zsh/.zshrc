@@ -125,11 +125,6 @@ zinit light jeffreytse/zsh-vi-mode
 # Tool integrations
 command -v fzf &>/dev/null && [[ -f ~/.fzf.zsh ]] && source ~/.fzf.zsh
 
-if command -v zoxide &>/dev/null; then
-  eval "$(zoxide init zsh)"
-  alias cd="z"
-fi
-
 command -v ng &>/dev/null && source <(ng completion script)
 
 # ─────────────────────────────────────────────
@@ -152,4 +147,16 @@ bindkey '^ ' autosuggest-accept
 # ─────────────────────────────────────────────
 if [[ ! -f ~/.zshrc.zwc || ~/.zshrc -nt ~/.zshrc.zwc ]]; then
   zcompile ~/.zshrc
+fi
+
+FPATH="$HOME/.docker/completions:$FPATH"
+autoload -Uz compinit
+compinit
+
+# ─────────────────────────────────────────────
+# zoxide (must be initialized at the very end so it overrides any prior cd)
+# ─────────────────────────────────────────────
+if command -v zoxide &>/dev/null; then
+  eval "$(zoxide init zsh)"
+  alias cd="z"
 fi
