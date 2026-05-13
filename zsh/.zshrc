@@ -160,3 +160,6 @@ if command -v zoxide &>/dev/null; then
   eval "$(zoxide init zsh)"
   alias cd="z"
 fi
+
+# opencode
+export PATH=/home/bensiauu/.opencode/bin:$PATH

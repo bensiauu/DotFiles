@@ -72,6 +72,26 @@
             "type": "command",
             "command": "python3 $HOME/.claude/hook-scripts/post-k8s-lint.py",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 $HOME/.claude/hook-scripts/post-zsh-syntax.py",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python3 $HOME/.claude/hook-scripts/post-nvim-stylua.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 $HOME/.claude/hook-scripts/post-emacs-bytecompile.py",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "python3 $HOME/.claude/hook-scripts/post-doom-sync-reminder.py",
+            "timeout": 5
           }
         ]
       }
