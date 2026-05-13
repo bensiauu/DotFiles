@@ -1,0 +1,91 @@
+{
+  "enabledPlugins": {
+    "pyright-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "terraform@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "mcp-server-dev@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "code-modernization@claude-plugins-official": true,
+    "session-report@claude-plugins-official": true,
+    "gopls-lsp@claude-plugins-official": true
+  },
+  "alwaysThinkingEnabled": true,
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 $HOME/.claude/hook-scripts/session-start-status.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 $HOME/.claude/hook-scripts/pre-terraform-apply.py",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3 $HOME/.claude/hook-scripts/pre-kubectl-guard.py",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 $HOME/.claude/hook-scripts/pre-workflow-pin-check.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 $HOME/.claude/hook-scripts/post-tf-fmt.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 $HOME/.claude/hook-scripts/post-k8s-lint.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 $HOME/.claude/hook-scripts/stop-plans-summary.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+# Never commit anything machine-local or sensitive that might end up in this
+# package by accident.
+
+.claude/.credentials.json
+.claude/cache/
+.claude/sessions/
+.claude/history.jsonl
+.claude/todos/
+.claude/tasks/
+.claude/file-history/
+.claude/debug/
+.claude/paste-cache/
+.claude/shell-snapshots/
+.claude/session-env/
+.claude/ide/
+.claude/statsig/
+.claude/stats-cache.json
+.claude/telemetry/
+.claude/backups/
+.claude/downloads/
+.claude/.last-cleanup
+.claude/mcp-needs-auth-cache.json
+.claude/plugins/
+.claude/projects/
+.claude/plans/
+
+# Python bytecode if hook-scripts ever produces it
+.claude/hook-scripts/__pycache__/
+.claude/hook-scripts/*.pyc

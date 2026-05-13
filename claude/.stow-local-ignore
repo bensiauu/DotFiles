@@ -1,0 +1,5 @@
+# Files at the top of this stow package that should NOT be linked into $HOME.
+# Stow processes regex per line, anchored.
+^/README\.md$
+^/\.gitignore$
+^/\.stow-local-ignore$
