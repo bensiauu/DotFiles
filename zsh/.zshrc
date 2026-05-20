@@ -83,6 +83,17 @@ extract() {
 }
 ff() { find . -type f -name "*$1*"; }
 
+ss() {
+  mkdir -p ~/tmp
+  powershell.exe -NoProfile -Command \
+    "Add-Type -Assembly System.Windows.Forms; \$img=[System.Windows.Forms.Clipboard]::GetImage(); if(\$img){\$img.Save('C:\Temp\ss.png'); Write-Host 'OK'} else {Write-Host 'NO_IMAGE'; exit 1}"
+  if [ $? -eq 0 ]; then
+    cp /mnt/c/Temp/ss.png ~/tmp/ss.png 2>/dev/null && echo "~/tmp/ss.png updated"
+  else
+    echo "No image in clipboard"
+  fi
+}
+
 hash -d config="$XDG_CONFIG_HOME"
 hash -d dots="$HOME/DotFiles"
 
@@ -163,3 +174,8 @@ fi
 
 # opencode
 export PATH=/home/bensiauu/.opencode/bin:$PATH
+
+# secret
+if [ -f ~/.zshrc.local ]; then
+    source ~/.zshrc.local
+fi

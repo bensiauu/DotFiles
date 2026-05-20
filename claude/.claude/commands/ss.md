@@ -1,0 +1,1 @@
+Run the shell command `ss` to grab the current screenshot from the Windows clipboard into ~/tmp/ss.png. Then read ~/tmp/ss.png and analyze it. If the user provided additional instructions via $ARGUMENTS, follow them in the context of the screenshot.
