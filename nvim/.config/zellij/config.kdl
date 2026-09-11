@@ -1,0 +1,419 @@
+// ============================================================================
+//  Zellij config — bensiauu  (overhaul 2026-07)
+//  Managed via GNU Stow: DotFiles/zellij/.config/zellij/  ->  ~/.config/zellij/
+//
+//  Highlights vs stock:
+//   - Seamless nvim <-> zellij nav on Ctrl+h/j/k/l  (vim-zellij-navigator + smart-splits.nvim)
+//   - Auto-lock for full-screen TUIs (k9s/less/lazygit...) so their keys aren't eaten
+//   - zjstatus status bar with mode / session / tabs / git branch / KUBE CONTEXT / clock
+//   - WSL clipboard via clip.exe; scrollback edits in nvim; session viewports persisted
+//   - Repo sessionizer lives in the shell (`zj`), see ~/.zshrc
+//
+//  Plugins are vendored + pinned under ./plugins/ (see plugins/VERSIONS.md).
+//  NOTE: first launch pops a permission prompt per plugin — approve once (they persist).
+// ============================================================================
+
+keybinds clear-defaults=true {
+    // ---- normal --------------------------------------------------------------
+    // Enter is rebound so autolock re-evaluates the foreground command whenever
+    // you launch something (it still sends a real carriage-return to the pane).
+    normal {
+        bind "Enter" {
+            WriteChars "\u{000D}";
+            MessagePlugin "autolock";
+        }
+    }
+    locked {
+        bind "Ctrl g" { SwitchToMode "normal"; }
+        // Manually pin LOCKED (autolock won't fight you): Alt z toggles autolock off.
+        bind "Alt z" {
+            MessagePlugin "autolock" { payload "disable"; };
+            SwitchToMode "normal";
+        }
+    }
+    pane {
+        bind "left" { MoveFocus "left"; }
+        bind "down" { MoveFocus "down"; }
+        bind "up" { MoveFocus "up"; }
+        bind "right" { MoveFocus "right"; }
+        bind "c" { SwitchToMode "renamepane"; PaneNameInput 0; }
+        bind "d" { NewPane "down"; SwitchToMode "normal"; }
+        bind "e" { TogglePaneEmbedOrFloating; SwitchToMode "normal"; }
+        bind "f" { ToggleFocusFullscreen; SwitchToMode "normal"; }
+        bind "h" { MoveFocus "left"; }
+        bind "i" { TogglePanePinned; SwitchToMode "normal"; }
+        bind "j" { MoveFocus "down"; }
+        bind "k" { MoveFocus "up"; }
+        bind "l" { MoveFocus "right"; }
+        bind "n" { NewPane; SwitchToMode "normal"; }
+        bind "p" { SwitchFocus; }
+        bind "Ctrl p" { SwitchToMode "normal"; }
+        bind "r" { NewPane "right"; SwitchToMode "normal"; }
+        bind "s" { NewPane "stacked"; SwitchToMode "normal"; }
+        bind "w" { ToggleFloatingPanes; SwitchToMode "normal"; }
+        bind "z" { TogglePaneFrames; SwitchToMode "normal"; }
+    }
+    tab {
+        bind "left" { GoToPreviousTab; }
+        bind "down" { GoToNextTab; }
+        bind "up" { GoToPreviousTab; }
+        bind "right" { GoToNextTab; }
+        bind "1" { GoToTab 1; SwitchToMode "normal"; }
+        bind "2" { GoToTab 2; SwitchToMode "normal"; }
+        bind "3" { GoToTab 3; SwitchToMode "normal"; }
+        bind "4" { GoToTab 4; SwitchToMode "normal"; }
+        bind "5" { GoToTab 5; SwitchToMode "normal"; }
+        bind "6" { GoToTab 6; SwitchToMode "normal"; }
+        bind "7" { GoToTab 7; SwitchToMode "normal"; }
+        bind "8" { GoToTab 8; SwitchToMode "normal"; }
+        bind "9" { GoToTab 9; SwitchToMode "normal"; }
+        bind "[" { BreakPaneLeft; SwitchToMode "normal"; }
+        bind "]" { BreakPaneRight; SwitchToMode "normal"; }
+        bind "b" { BreakPane; SwitchToMode "normal"; }
+        bind "h" { GoToPreviousTab; }
+        bind "j" { GoToNextTab; }
+        bind "k" { GoToPreviousTab; }
+        bind "l" { GoToNextTab; }
+        bind "n" { NewTab; SwitchToMode "normal"; }
+        bind "r" { SwitchToMode "renametab"; TabNameInput 0; }
+        bind "s" { ToggleActiveSyncTab; SwitchToMode "normal"; }
+        bind "Ctrl t" { SwitchToMode "normal"; }
+        bind "x" { CloseTab; SwitchToMode "normal"; }
+        bind "tab" { ToggleTab; }
+    }
+    resize {
+        bind "left" { Resize "Increase left"; }
+        bind "down" { Resize "Increase down"; }
+        bind "up" { Resize "Increase up"; }
+        bind "right" { Resize "Increase right"; }
+        bind "+" { Resize "Increase"; }
+        bind "-" { Resize "Decrease"; }
+        bind "=" { Resize "Increase"; }
+        bind "H" { Resize "Decrease left"; }
+        bind "J" { Resize "Decrease down"; }
+        bind "K" { Resize "Decrease up"; }
+        bind "L" { Resize "Decrease right"; }
+        bind "h" { Resize "Increase left"; }
+        bind "j" { Resize "Increase down"; }
+        bind "k" { Resize "Increase up"; }
+        bind "l" { Resize "Increase right"; }
+        bind "Ctrl n" { SwitchToMode "normal"; }
+    }
+    move {
+        bind "left" { MovePane "left"; }
+        bind "down" { MovePane "down"; }
+        bind "up" { MovePane "up"; }
+        bind "right" { MovePane "right"; }
+        bind "h" { MovePane "left"; }
+        bind "j" { MovePane "down"; }
+        bind "k" { MovePane "up"; }
+        bind "l" { MovePane "right"; }
+        bind "n" { MovePane; }
+        bind "p" { MovePaneBackwards; }
+        bind "tab" { MovePane; }
+    }
+    scroll {
+        bind "Alt left" { MoveFocusOrTab "left"; SwitchToMode "normal"; }
+        bind "Alt down" { MoveFocus "down"; SwitchToMode "normal"; }
+        bind "Alt up" { MoveFocus "up"; SwitchToMode "normal"; }
+        bind "Alt right" { MoveFocusOrTab "right"; SwitchToMode "normal"; }
+        bind "e" { EditScrollback; SwitchToMode "normal"; }
+        bind "Alt h" { MoveFocusOrTab "left"; SwitchToMode "normal"; }
+        bind "Alt j" { MoveFocus "down"; SwitchToMode "normal"; }
+        bind "Alt k" { MoveFocus "up"; SwitchToMode "normal"; }
+        bind "Alt l" { MoveFocusOrTab "right"; SwitchToMode "normal"; }
+        bind "s" { SwitchToMode "entersearch"; SearchInput 0; }
+    }
+    search {
+        bind "c" { SearchToggleOption "CaseSensitivity"; }
+        bind "n" { Search "down"; }
+        bind "o" { SearchToggleOption "WholeWord"; }
+        bind "p" { Search "up"; }
+        bind "w" { SearchToggleOption "Wrap"; }
+    }
+    session {
+        bind "a" {
+            LaunchOrFocusPlugin "zellij:about" { floating true; move_to_focused_tab true; }
+            SwitchToMode "normal"
+        }
+        bind "c" {
+            LaunchOrFocusPlugin "configuration" { floating true; move_to_focused_tab true; }
+            SwitchToMode "normal"
+        }
+        bind "l" {
+            LaunchOrFocusPlugin "zellij:layout-manager" { floating true; move_to_focused_tab true; }
+            SwitchToMode "normal"
+        }
+        bind "Ctrl o" { SwitchToMode "normal"; }
+        bind "p" {
+            LaunchOrFocusPlugin "plugin-manager" { floating true; move_to_focused_tab true; }
+            SwitchToMode "normal"
+        }
+        bind "s" {
+            LaunchOrFocusPlugin "zellij:share" { floating true; move_to_focused_tab true; }
+            SwitchToMode "normal"
+        }
+        bind "w" {
+            LaunchOrFocusPlugin "session-manager" { floating true; move_to_focused_tab true; }
+            SwitchToMode "normal"
+        }
+        // "?" -> keybinding cheatsheet (zellij-forgot). Mnemonic: Ctrl+o then ?
+        bind "?" {
+            LaunchOrFocusPlugin "forgot" { floating true; move_to_focused_tab true; }
+            SwitchToMode "normal"
+        }
+    }
+    shared_except "locked" {
+        bind "Alt +" { Resize "Increase"; }
+        bind "Alt -" { Resize "Decrease"; }
+        bind "Alt =" { Resize "Increase"; }
+        bind "Alt [" { PreviousSwapLayout; }
+        bind "Alt ]" { NextSwapLayout; }
+        bind "Alt f" { ToggleFloatingPanes; }
+        bind "Alt m" { SwitchToMode "move"; }
+        // Session-manager as a TILED sidebar (switch / rename / delete sessions).
+        bind "Alt s" { LaunchOrFocusPlugin "session-manager" { move_to_focused_tab true; }; }
+        bind "Ctrl g" { SwitchToMode "locked"; }
+        bind "Alt i" { MoveTab "left"; }
+        bind "Alt n" { NewPane; }
+        bind "Alt o" { MoveTab "right"; }
+        bind "Alt p" { TogglePaneInGroup; }
+        bind "Alt Shift p" { ToggleGroupMarking; }
+        bind "Ctrl q" { Quit; }
+        // Manually force LOCKED and turn autolock off for this pane.
+        bind "Alt z" {
+            MessagePlugin "autolock" { payload "disable"; };
+            SwitchToMode "locked";
+        }
+    }
+    // Seamless focus: hands Ctrl+h/j/k/l to nvim when a vim/nvim pane is focused,
+    // otherwise moves the zellij pane/tab. Pairs with smart-splits.nvim on the nvim side.
+    shared_except "locked" {
+        bind "Ctrl h" { MessagePlugin "vim-nav" { name "move_focus_or_tab"; payload "left";  move_mod "ctrl"; }; }
+        bind "Ctrl j" { MessagePlugin "vim-nav" { name "move_focus";        payload "down";  move_mod "ctrl"; }; }
+        bind "Ctrl k" { MessagePlugin "vim-nav" { name "move_focus";        payload "up";    move_mod "ctrl"; }; }
+        bind "Ctrl l" { MessagePlugin "vim-nav" { name "move_focus_or_tab"; payload "right"; move_mod "ctrl"; }; }
+    }
+    // Re-enable autolock from anywhere after a manual override.
+    shared {
+        bind "Alt Shift z" { MessagePlugin "autolock" { payload "enable"; }; }
+    }
+    shared_except "locked" "session" {
+        bind "Ctrl o" { SwitchToMode "session"; }
+    }
+    shared_except "locked" "scroll" {
+        bind "Alt left" { MoveFocusOrTab "left"; }
+        bind "Alt down" { MoveFocus "down"; }
+        bind "Alt up" { MoveFocus "up"; }
+        bind "Alt right" { MoveFocusOrTab "right"; }
+        bind "Alt h" { MoveFocusOrTab "left"; }
+        bind "Alt j" { MoveFocus "down"; }
+        bind "Alt k" { MoveFocus "up"; }
+        bind "Alt l" { MoveFocusOrTab "right"; }
+    }
+    shared_except "locked" "scroll" "search" "tmux" {
+        bind "Ctrl b" { SwitchToMode "tmux"; }
+    }
+    shared_except "locked" "scroll" "search" {
+        bind "Ctrl s" { SwitchToMode "scroll"; }
+    }
+    shared_except "locked" "tab" {
+        bind "Ctrl t" { SwitchToMode "tab"; }
+    }
+    shared_except "locked" "pane" {
+        bind "Ctrl p" { SwitchToMode "pane"; }
+    }
+    shared_except "locked" "resize" {
+        bind "Ctrl n" { SwitchToMode "resize"; }
+    }
+    shared_except "normal" "locked" "entersearch" {
+        bind "enter" { SwitchToMode "normal"; }
+    }
+    shared_except "normal" "locked" "entersearch" "renametab" "renamepane" {
+        bind "esc" { SwitchToMode "normal"; }
+    }
+    shared_among "pane" "tmux" {
+        bind "x" { CloseFocus; SwitchToMode "normal"; }
+    }
+    shared_among "scroll" "search" {
+        bind "PageDown" { PageScrollDown; }
+        bind "PageUp" { PageScrollUp; }
+        bind "left" { PageScrollUp; }
+        bind "down" { ScrollDown; }
+        bind "up" { ScrollUp; }
+        bind "right" { PageScrollDown; }
+        bind "Ctrl b" { PageScrollUp; }
+        bind "Ctrl c" { ScrollToBottom; SwitchToMode "normal"; }
+        bind "d" { HalfPageScrollDown; }
+        bind "Ctrl f" { PageScrollDown; }
+        bind "h" { PageScrollUp; }
+        bind "j" { ScrollDown; }
+        bind "k" { ScrollUp; }
+        bind "l" { PageScrollDown; }
+        bind "Ctrl s" { SwitchToMode "normal"; }
+        bind "u" { HalfPageScrollUp; }
+    }
+    entersearch {
+        bind "Ctrl c" { SwitchToMode "scroll"; }
+        bind "esc" { SwitchToMode "scroll"; }
+        bind "enter" { SwitchToMode "search"; }
+    }
+    renametab {
+        bind "esc" { UndoRenameTab; SwitchToMode "tab"; }
+    }
+    shared_among "renametab" "renamepane" {
+        bind "Ctrl c" { SwitchToMode "normal"; }
+    }
+    renamepane {
+        bind "esc" { UndoRenamePane; SwitchToMode "pane"; }
+    }
+    shared_among "session" "tmux" {
+        bind "d" { Detach; }
+    }
+    tmux {
+        bind "left" { MoveFocus "left"; SwitchToMode "normal"; }
+        bind "down" { MoveFocus "down"; SwitchToMode "normal"; }
+        bind "up" { MoveFocus "up"; SwitchToMode "normal"; }
+        bind "right" { MoveFocus "right"; SwitchToMode "normal"; }
+        bind "space" { NextSwapLayout; }
+        bind "\"" { NewPane "down"; SwitchToMode "normal"; }
+        bind "%" { NewPane "right"; SwitchToMode "normal"; }
+        bind "," { SwitchToMode "renametab"; }
+        bind "[" { SwitchToMode "scroll"; }
+        bind "Ctrl b" { Write 2; SwitchToMode "normal"; }
+        bind "c" { NewTab; SwitchToMode "normal"; }
+        bind "h" { MoveFocus "left"; SwitchToMode "normal"; }
+        bind "j" { MoveFocus "down"; SwitchToMode "normal"; }
+        bind "k" { MoveFocus "up"; SwitchToMode "normal"; }
+        bind "l" { MoveFocus "right"; SwitchToMode "normal"; }
+        bind "n" { GoToNextTab; SwitchToMode "normal"; }
+        bind "o" { FocusNextPane; }
+        bind "p" { GoToPreviousTab; SwitchToMode "normal"; }
+        bind "z" { ToggleFocusFullscreen; SwitchToMode "normal"; }
+    }
+}
+
+// ============================================================================
+//  Plugin aliases (changing these requires a restart)
+// ============================================================================
+plugins {
+    // ---- stock built-ins ----
+    about location="zellij:about"
+    compact-bar location="zellij:compact-bar"
+    configuration location="zellij:configuration"
+    filepicker location="zellij:strider" { cwd "/"; }
+    plugin-manager location="zellij:plugin-manager"
+    session-manager location="zellij:session-manager"
+    status-bar location="zellij:status-bar"
+    strider location="zellij:strider"
+    tab-bar location="zellij:tab-bar"
+    welcome-screen location="zellij:session-manager" { welcome_screen true; }
+
+    // ---- vendored third-party (pinned; see plugins/VERSIONS.md) ----
+
+    // Seamless nvim<->zellij focus movement (paired with smart-splits.nvim).
+    vim-nav location="file:~/.config/zellij/plugins/vim-zellij-navigator.wasm"
+
+    // Auto-locks zellij when a full-screen TUI is focused so its keys aren't
+    // swallowed. nvim is intentionally NOT a trigger — vim-nav handles nvim while
+    // zellij stays unlocked. Add "nvim|vim" here if you'd rather lock in the editor.
+    autolock location="file:~/.config/zellij/plugins/zellij-autolock.wasm" {
+        is_enabled true
+        triggers "k9s|lazygit|gitui|less|man|htop|btop|weechat"
+        reaction_seconds "0.3"
+        print_to_log false
+    }
+
+    // Keybinding cheatsheet (Ctrl+o then ?).
+    forgot location="file:~/.config/zellij/plugins/zellij_forgot.wasm"
+
+    // Status bar. The alias carries the full config, so every layout just does:
+    //   pane size=1 borderless=true { plugin location="zjstatus"; }
+    zjstatus location="file:~/.config/zellij/plugins/zjstatus.wasm" {
+        format_left   "{mode}#[fg=#7aa2f7,bg=#1a1b26,bold] {session} "
+        format_center "{tabs}"
+        format_right  "{command_kube}{command_git}{datetime}"
+        format_space  "#[bg=#1a1b26]"
+        border_enabled "false"
+
+        // -- overflow handling --
+        // Without this, content wider than the terminal overflows a 1-row bar and only
+        // the wrapped tail (the clock) renders. "true" makes zjstatus drop whole blocks
+        // instead. Precedence letters = left/center/right: first is always visible, last
+        // is hidden first. "lcr" keeps mode+session and tabs; drops kube/git/clock first.
+        format_hide_on_overlength "true"
+        format_precedence "lcr"
+
+        // -- mode indicators (tokyo-night palette) --
+        mode_normal      "#[bg=#7aa2f7,fg=#1a1b26,bold] NORMAL "
+        mode_locked      "#[bg=#f7768e,fg=#1a1b26,bold] LOCKED "
+        mode_pane        "#[bg=#9ece6a,fg=#1a1b26,bold] PANE "
+        mode_tab         "#[bg=#e0af68,fg=#1a1b26,bold] TAB "
+        mode_resize      "#[bg=#bb9af7,fg=#1a1b26,bold] RESIZE "
+        mode_move        "#[bg=#bb9af7,fg=#1a1b26,bold] MOVE "
+        mode_scroll      "#[bg=#7dcfff,fg=#1a1b26,bold] SCROLL "
+        mode_search      "#[bg=#7dcfff,fg=#1a1b26,bold] SEARCH "
+        mode_entersearch "#[bg=#7dcfff,fg=#1a1b26,bold] SEARCH: "
+        mode_session     "#[bg=#ff9e64,fg=#1a1b26,bold] SESSION "
+        mode_tmux        "#[bg=#ff9e64,fg=#1a1b26,bold] TMUX "
+        mode_renamepane  "#[bg=#9ece6a,fg=#1a1b26,bold] RENAME "
+        mode_renametab   "#[bg=#e0af68,fg=#1a1b26,bold] RENAME "
+
+        // -- tabs --
+        tab_normal "#[fg=#565f89,bg=#1a1b26] {index}·{name} "
+        tab_active "#[fg=#7aa2f7,bg=#1a1b26,bold,italic] {index}·{name} "
+
+        // -- git branch of the focused pane's cwd --
+        command_git_command    "bash -c \"git symbolic-ref --short HEAD 2>/dev/null || echo detached\""
+        command_git_format     "#[fg=#9ece6a,bg=#1a1b26] {stdout} "
+        command_git_interval   "5"
+        command_git_rendermode "static"
+        command_git_cwd        "{focused_pane_cwd}"
+
+        // -- current kube context: "which cluster am I on?" (global kubeconfig context) --
+        command_kube_command    "bash -c \"kubectl config current-context 2>/dev/null || echo no-context\""
+        command_kube_format     "#[fg=#1a1b26,bg=#7dcfff,bold] ⎈ {stdout} #[bg=#1a1b26] "
+        command_kube_interval   "5"
+        command_kube_rendermode "static"
+
+        datetime          "#[fg=#565f89,bg=#1a1b26,bold] {format} "
+        datetime_format   "%H:%M"
+        datetime_timezone "Asia/Singapore"
+    }
+}
+
+// Background plugins loaded at session start.
+load_plugins {
+    zellij:link
+    autolock
+    vim-nav
+}
+
+// ============================================================================
+//  Options
+// ============================================================================
+theme "tokyo-night"
+default_mode "normal"
+default_layout "default"
+
+// WSL2: pipe copies straight to the Windows clipboard (OSC52 can be flaky across
+// the WSL boundary). For bidirectional paste too, install win32yank and swap to:
+//   copy_command "win32yank.exe -i --crlf"
+copy_command "clip.exe"
+copy_on_select true
+
+// Edit the scrollback buffer (scroll mode -> e) in nvim.
+scrollback_editor "/usr/sbin/nvim"
+
+// Persist sessions + pane viewports so a detach/reboot can be resurrected WITH content.
+session_serialization true
+serialize_pane_viewport true
+
+pane_frames true
+mouse_mode true
+show_startup_tips false
+
+web_client {
+    font "monospace"
+}
+

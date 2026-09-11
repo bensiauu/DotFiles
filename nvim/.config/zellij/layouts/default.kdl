@@ -1,0 +1,51 @@
+// default.kdl — everyday layout (config.kdl -> default_layout "default").
+// zjstatus bottom bar + work-pane swap layouts (cycle with Alt [ / Alt ]).
+layout {
+    default_tab_template {
+        children
+        pane size=1 borderless=true {
+            plugin location="zjstatus"
+        }
+    }
+
+    tab name="main" focus=true {
+        pane focus=true
+    }
+
+    // --- Work-pane reflow: Alt [ (previous) / Alt ] (next) ---
+    // Growing slots use `pane stacked=true { children; }` (accordion) — the ONLY
+    // reliable unbounded stack in zellij swap layouts. Plain `pane { children; }`
+    // orphans the 3rd+ pane (children is a single slot; overflow goes "unspecified").
+    // NOTE: swap layouts do NOT inherit default_tab_template, so the zjstatus bar
+    // must be repeated in every tab below or it vanishes on the first swap and
+    // never returns. The borderless zjstatus bar is NOT counted by max_panes/
+    // min_panes — only content panes are — so thresholds equal the content-pane
+    // count (not content+1). Getting this wrong orphans a dead pane above the bar.
+
+    // DEFAULT: master pane left, extra panes = accordion stack on the right.
+    swap_tiled_layout name="main-stack" {
+        tab max_panes=1 {                     // 1 content pane
+            pane
+            pane size=1 borderless=true { plugin location="zjstatus"; }
+        }
+        tab min_panes=2 {                     // 2+ content panes
+            pane split_direction="vertical" {
+                pane size="62%"               // master
+                pane stacked=true { children; }   // growing accordion stack
+            }
+            pane size=1 borderless=true { plugin location="zjstatus"; }
+        }
+    }
+
+    // Full-width accordion stack (no master).
+    swap_tiled_layout name="stacked" {
+        tab max_panes=1 {                     // 1 content pane
+            pane
+            pane size=1 borderless=true { plugin location="zjstatus"; }
+        }
+        tab min_panes=2 {                     // 2+ content panes
+            pane stacked=true { children; }
+            pane size=1 borderless=true { plugin location="zjstatus"; }
+        }
+    }
+}

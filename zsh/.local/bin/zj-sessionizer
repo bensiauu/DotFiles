@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# zj-sessionizer — fuzzy-pick a project and open it in zellij.
+#
+#   - Outside zellij : attach to an existing session named after the repo, else
+#                      create a new one with a layout chosen by repo type.
+#   - Inside zellij  : open the repo as a new TAB (with the chosen layout).
+#
+# Candidates = git repo roots under ~/work (+ a couple of other roots) ∪ zoxide's
+# database, deduped. Pass a path as $1 to skip the picker.
+#
+# Built from installed tools: fd + zoxide + fzf.
+set -euo pipefail
+
+ROOTS=("$HOME/work" "$HOME/DotFiles")
+
+pick() {
+    {
+        # git repo roots (dir containing a .git) under the roots, depth-limited
+        fd -Ht d --max-depth 6 '^\.git$' "${ROOTS[@]}" 2>/dev/null \
+            | while read -r g; do dirname "$g"; done
+        # frequently-visited dirs from zoxide
+        zoxide query -l 2>/dev/null
+    } | awk 'NF' \
+      | grep -vE '/(\.claude|\.config|node_modules|\.git|\.venv|venv|target|dist|worktrees)(/|$)' \
+      | sort -u
+}
+
+if [[ $# -ge 1 ]]; then
+    selected="$1"
+else
+    selected="$(pick | fzf --prompt='  project ▸ ' --height=45% --reverse \
+        --preview 'ls -la {} 2>/dev/null | head -40' --preview-window=right,50%)" || exit 0
+fi
+[[ -z "${selected:-}" ]] && exit 0
+selected="${selected%/}"
+[[ -d "$selected" ]] || { echo "not a directory: $selected" >&2; exit 1; }
+
+# session name = sanitized basename (zellij dislikes '.' in names)
+name="$(basename "$selected" | tr '. ' '__')"
+
+# choose a layout by what the repo contains
+layout="default"
+base="$(basename "$selected")"
+if   [[ -f "$selected/next.config.ts" || -f "$selected/next.config.js" ]]; then
+    layout="frontend"
+elif [[ "$base" == *manifest* || -d "$selected/argocd" || -d "$selected/overlays" || -d "$selected/base" ]]; then
+    layout="k8s"
+elif [[ -f "$selected/pyproject.toml" || -f "$selected/docker-compose.yml" || -f "$selected/requirements.txt" ]]; then
+    layout="dev"
+fi
+
+if [[ -z "${ZELLIJ:-}${ZELLIJ_SESSION_NAME:-}" ]]; then
+    # not inside zellij: attach if the session exists, otherwise create it
+    if zellij list-sessions -ns 2>/dev/null | grep -qx "$name"; then
+        exec zellij attach "$name"
+    else
+        cd "$selected" && exec zellij --session "$name" --layout "$layout"
+    fi
+else
+    # inside zellij: open the project as a new tab
+    zellij action new-tab --layout "$layout" --cwd "$selected" --name "$name"
+fi

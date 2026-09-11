@@ -1,0 +1,26 @@
+// k8s.kdl — cluster ops layout.  Launch:  zellij -l k8s
+// Tab 1: k9s fullscreen.  Tab 2: logs (kubectl logs / stern).  Tab 3: scratch shell.
+// The zjstatus bar shows the current kube context (top-right) so you always know
+// which of your 6 clusters you're pointed at.
+//
+// Optional: install `stern` for multi-pod log tailing (e.g. `stern -n <ns> <selector>`).
+layout {
+    default_tab_template {
+        children
+        pane size=1 borderless=true {
+            plugin location="zjstatus"
+        }
+    }
+
+    tab name="k9s" focus=true {
+        pane {
+            command "k9s"
+        }
+    }
+    tab name="logs" {
+        pane name="logs"
+    }
+    tab name="shell" {
+        pane name="shell"
+    }
+}

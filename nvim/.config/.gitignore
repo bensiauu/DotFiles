@@ -1,0 +1,8 @@
+# This directory is the target of ~/.config -> DotFiles/nvim/.config,
+# so the whole real ~/.config bleeds in here. Only track the packages
+# that actually belong to the dotfiles; ignore everything else
+# (gh/argocd/.jira/git/copilot/... contain live credentials).
+/*
+!/nvim
+!/zellij
+!/.gitignore

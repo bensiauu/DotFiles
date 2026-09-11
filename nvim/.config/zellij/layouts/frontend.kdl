@@ -1,0 +1,25 @@
+// frontend.kdl — Next.js layout.  Launch from the frontend repo:  zellij -l frontend
+// Left: nvim (65%). Right: a "dev" shell (run `pnpm dev`) + a scratch shell.
+// The dev pane is a plain shell (not an auto-run command) because pnpm is
+// nvm-managed and needs the interactive shell to resolve it.
+layout {
+    default_tab_template {
+        children
+        pane size=1 borderless=true {
+            plugin location="zjstatus"
+        }
+    }
+
+    tab name="code" focus=true {
+        pane split_direction="vertical" {
+            pane size="65%" name="editor" {
+                command "/usr/sbin/nvim"
+                args "."
+            }
+            pane split_direction="horizontal" {
+                pane name="dev"
+                pane name="shell"
+            }
+        }
+    }
+}

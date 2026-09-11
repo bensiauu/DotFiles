@@ -1,0 +1,10 @@
+# Runtime / machine-local state and live secrets — never version these.
+.last-update-result.json
+daemon.lock
+daemon.log
+daemon.status.json
+daemon/
+jobs/
+security/
+# settings.json carries a live ANTHROPIC_AUTH_TOKEN in the working copy;
+# keep the tracked (token-less) version, don't commit local secret edits.

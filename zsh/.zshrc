@@ -6,6 +6,21 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
 fi
 
 # ─────────────────────────────────────────────
+# Herdr auto-start — launch (or attach to) the persistent session for
+# interactive terminals. Skips: non-interactive shells, a shell already inside
+# herdr, the VS Code integrated terminal, and when HERDR_DISABLE_AUTOSTART=1 is
+# exported. Exiting/detaching herdr drops you back to a plain shell.
+#   • one-off plain shell:   HERDR_DISABLE_AUTOSTART=1 zsh
+#   • disable permanently:   export HERDR_DISABLE_AUTOSTART=1  (above this line)
+# ─────────────────────────────────────────────
+if [[ -o interactive && -z "${HERDR_ENV:-}" \
+      && -z "${HERDR_DISABLE_AUTOSTART:-}" \
+      && "$TERM_PROGRAM" != "vscode" && -z "${VSCODE_INJECTION:-}" ]] \
+   && command -v herdr &>/dev/null; then
+  exec herdr
+fi
+
+# ─────────────────────────────────────────────
 # Environment
 # ─────────────────────────────────────────────
 export TERM=xterm-256color
@@ -16,15 +31,11 @@ export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$HOME/.n/bin:$HOME/go/bin:/u
 # Python (pyenv)
 export PATH="$HOME/.pyenv/bin:$PATH"
 eval "$(pyenv init -)"
-eval "$(pyenv virtualenv-init -)"  # if you use pyenv-virtualenv
 
 # Node (lazy-load NVM)
-export NVM_DIR="$HOME/.nvm"
-nvm()  { unfunction nvm;   [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"; nvm "$@"; }
-node() { unfunction node;  nvm use default >/dev/null; node "$@"; }
-npm()  { unfunction npm;   nvm use default >/dev/null; npm "$@"; }
-npx()  { unfunction npx;   nvm use default >/dev/null; npx "$@"; }
-
+export NVM_DIR="$HOME/.config/nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 # Compiler paths (macOS Homebrew GCC)
 # export LIBRARY_PATH="/opt/homebrew/lib/gcc/current:$LIBRARY_PATH"
 # export CC="/opt/homebrew/bin/gcc-15"
@@ -86,7 +97,7 @@ ff() { find . -type f -name "*$1*"; }
 ss() {
   mkdir -p ~/tmp
   powershell.exe -NoProfile -Command \
-    "Add-Type -Assembly System.Windows.Forms; \$img=[System.Windows.Forms.Clipboard]::GetImage(); if(\$img){\$img.Save('C:\Temp\ss.png'); Write-Host 'OK'} else {Write-Host 'NO_IMAGE'; exit 1}"
+    "Add-Type -Assembly System.Windows.Forms; Add-Type -Assembly System.Drawing; \$img=[System.Windows.Forms.Clipboard]::GetImage(); if(-not \$img){\$data=[System.Windows.Forms.Clipboard]::GetDataObject(); if(\$data -and \$data.GetDataPresent('PNG')){\$stream=\$data.GetData('PNG'); \$img=[System.Drawing.Image]::FromStream(\$stream)}}; if(\$img){New-Item -ItemType Directory -Force -Path 'C:\Temp'|Out-Null; \$img.Save('C:\Temp\ss.png'); Write-Host 'OK'} else {Write-Host 'NO_IMAGE'; exit 1}"
   if [ $? -eq 0 ]; then
     cp /mnt/c/Temp/ss.png ~/tmp/ss.png 2>/dev/null && echo "~/tmp/ss.png updated"
   else
@@ -179,3 +190,17 @@ export PATH=/home/bensiauu/.opencode/bin:$PATH
 if [ -f ~/.zshrc.local ]; then
     source ~/.zshrc.local
 fi
+
+export LANG=en_US.UTF.8
+export LC_ALL=en_US.UTF-8
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+export NVM_DIR="$HOME/.config/nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+
+# bun completions
+[ -s "/home/bensiauu/.bun/_bun" ] && source "/home/bensiauu/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"

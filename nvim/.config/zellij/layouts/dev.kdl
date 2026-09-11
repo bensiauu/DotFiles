@@ -1,0 +1,24 @@
+// dev.kdl — Python / service coding layout.  Launch from a repo:  zellij -l dev
+// Left: nvim (65%). Right column: a shell (top) + a run/test pane (bottom).
+// Panes inherit the cwd you launched from.
+layout {
+    default_tab_template {
+        children
+        pane size=1 borderless=true {
+            plugin location="zjstatus"
+        }
+    }
+
+    tab name="code" focus=true {
+        pane split_direction="vertical" {
+            pane size="65%" name="editor" {
+                command "/usr/sbin/nvim"
+                args "."
+            }
+            pane split_direction="horizontal" {
+                pane name="shell"
+                pane name="run"
+            }
+        }
+    }
+}
