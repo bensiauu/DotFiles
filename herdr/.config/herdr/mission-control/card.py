@@ -240,16 +240,55 @@ def act_focus(pane):
     out = sh("herdr", "agent", "focus", pane)
     return ("error" not in out[:40], out)
 
-def act_reply(pane, text):
+def _herdr_ok(r):
+    """(ok, short error code) from a finished herdr subprocess."""
+    err = r.stderr.strip() or r.stdout.strip()
+    if r.returncode == 0 and '"error"' not in r.stdout[:40]: return True, "ok"
+    try: code = json.loads(err).get("error", {}).get("code", err)
+    except Exception: code = err[:60]
+    return False, code
+
+def act_reply(pane, text, blocked=False):
+    """Deliver text to the agent. `herdr agent prompt` is refused while blocked, so a blocked
+    agent gets raw text + Enter via pane send-text / agent send-keys."""
     try:
-        r = subprocess.run(["herdr", "agent", "prompt", pane, text], capture_output=True, text=True, timeout=8)
-        err = r.stderr.strip() or r.stdout.strip()
-        if r.returncode == 0 and '"error"' not in r.stdout[:40]: return True, "sent"
-        try: code = json.loads(err).get("error", {}).get("code", err)
-        except Exception: code = err[:60]
-        return False, code
+        if not blocked:
+            return _herdr_ok(subprocess.run(["herdr", "agent", "prompt", pane, text], capture_output=True, text=True, timeout=8))
+        ok, msg = _herdr_ok(subprocess.run(["herdr", "pane", "send-text", pane, text], capture_output=True, text=True, timeout=6))
+        if not ok: return False, msg
+        time.sleep(0.15)
+        return act_keys(pane, "enter")
     except Exception as e:
         return False, str(e)[:60]
+
+def act_yes_no(pane, k, dialog):
+    """Answer an arrow-selected Yes/No list (e.g. the folder-trust prompt): move the cursor to the
+    option that starts with Yes/No, then Enter. Falls back to typing the letter + Enter when the
+    dialog shows no such list (a "(y/n)" question)."""
+    opts = [re.sub(r"^\s*❯\s*", "", l).strip() for l in (dialog or []) if re.match(r"^\s*(❯\s*)?(Yes|No)\b", l.strip(), re.I)]
+    cur = next((i for i, l in enumerate(l for l in (dialog or []) if re.match(r"^\s*(❯\s*)?(Yes|No)\b", l.strip(), re.I)) if l.strip().startswith("❯")), 0)
+    want = next((i for i, o in enumerate(opts) if o.lower().startswith("yes" if k == "y" else "no")), None)
+    if want is None:
+        ok, msg = act_keys(pane, k)
+        if not ok: return False, msg
+    else:
+        for _ in range(abs(want - cur)):
+            ok, msg = act_keys(pane, "down" if want > cur else "up")
+            if not ok: return False, msg
+            time.sleep(0.08)
+    time.sleep(0.15)
+    return act_keys(pane, "enter")
+
+FREE_TEXT_OPTS = ("type something", "other", "chat about this")
+def act_pick(pane, digit, label=""):
+    """Pick a numbered option in a blocked dialog. An option that opens a text box ("Type
+    something.", "Other", "Chat about this") gets only the digit: Enter on the empty box would
+    cancel the dialog. The card's reply line then types the text."""
+    ok, msg = act_keys(pane, digit)
+    if not ok: return False, msg
+    if label.strip().rstrip(".").lower() in FREE_TEXT_OPTS: return True, "text"
+    time.sleep(0.15)
+    return act_keys(pane, "enter")
 
 def act_keys(pane, *keys):
     r = subprocess.run(["herdr", "agent", "send-keys", pane, *keys], capture_output=True, text=True, timeout=6)
@@ -353,11 +392,12 @@ def main():
                 k = read_key(min(left, 0.25))
                 if k is None: continue
                 st = a.get("agent_status") if a else None
+                shape = ui.get("shape") or "unknown"
                 if ui["reply"] is not None:            # ---- typing a reply
                     if k == "enter":
                         text = ui["reply"].strip(); ui["reply"] = None
                         if text:
-                            ok, msg = act_reply(pane, text)
+                            ok, msg = act_reply(pane, text, blocked=(st == "blocked"))
                             flash(ui, "✓ sent" if ok else f"✗ {msg}", ok)
                     elif k == "esc": ui["reply"] = None; flash(ui, "cancelled", True, 1.0)
                     elif k == "bs": ui["reply"] = ui["reply"][:-1]
@@ -368,9 +408,9 @@ def main():
                     deadline = time.time() + 0.25
                 elif a is None:
                     continue
-                elif k == "enter":                     # ---- start a reply
-                    if st == "blocked":
-                        flash(ui, "agent is blocked: answer with y / n / esc, or g to go there", False, 3)
+                elif k == "enter":                     # ---- start a reply / free-text answer
+                    if st == "blocked" and shape not in ("free_text", "unknown"):
+                        flash(ui, BLOCKED_HINT[shape] + ", or g to go there", False, 3)
                     else:
                         ui["reply"] = ""
                     break
@@ -378,11 +418,22 @@ def main():
                     return
                 elif k == "g":                         # ---- go to the agent
                     ok, _ = act_focus(pane); flash(ui, "→ focused" if ok else "✗ focus failed", ok, 1.5); break
-                elif st == "blocked" and k in ("y", "n", "esc"):
-                    key = {"y": "y", "n": "n", "esc": "esc"}[k]
-                    ok, msg = act_keys(pane, key)
-                    if ok and k in ("y", "n"): act_keys(pane, "enter")
-                    flash(ui, f"✓ sent {k}" if ok else f"✗ {msg}", ok); break
+                elif st == "blocked" and k == "esc":
+                    ok, msg = act_keys(pane, "esc"); flash(ui, "✓ sent esc" if ok else f"✗ {msg}", ok); break
+                elif st == "blocked" and k in ("y", "n") and shape in ("yes_no", "unknown"):
+                    ok, msg = act_yes_no(pane, k, ui.get("dialog"))
+                    flash(ui, f"✓ sent {'yes' if k == 'y' else 'no'}" if ok else f"✗ {msg}", ok); break
+                elif st == "blocked" and k.isdigit() and k != "0" and shape in ("options", "unknown"):
+                    opts = ui.get("options") or []
+                    if shape == "options" and int(k) > len(opts):
+                        flash(ui, f"only {len(opts)} options", False, 1.5); break
+                    label = opts[int(k) - 1] if int(k) <= len(opts) else ""
+                    ok, msg = act_pick(pane, k, label)
+                    if ok and msg == "text":
+                        ui["reply"] = ""; flash(ui, f"✓ {clip(label, 20)}: type your answer, Enter sends", True, 4)
+                    else:
+                        flash(ui, f"✓ picked {k}{clip(' · ' + label, 30) if label else ''}" if ok else f"✗ {msg}", ok)
+                    break
     finally:
         sys.stdout.write("\033[?25h\033[0m\n"); sys.stdout.flush()
         for f in (f"/tmp/herdr-mc/claim-{os.getpid()}", f"/tmp/herdr-mc/card-{MY_PANE}"):
