@@ -15,7 +15,8 @@ Close the mission-control tab to stop everything; grid.py exits with the tab.
 """
 import glob, json, os, re, select, shutil, subprocess, sys, time, termios, tty
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from transcript import read_transcript, transcript_path, tool_label, ts, clip, glyph
+from transcript import read_transcript, transcript_path, tool_label, ts, clip, glyph, subagents
+from blocked import classify, dialog_lines
 
 HOME = os.path.expanduser("~")
 MY_PANE = os.environ.get("HERDR_PANE_ID", f"pid{os.getpid()}").replace(":", "_")
@@ -69,15 +70,55 @@ def wrap(s, width, max_lines):
         if not lines[-1].endswith("…"): lines[-1] = lines[-1][: width - 1] + "…"
     return lines
 
-def blocked_text(pane_id, lines=14):
+def plain(s): return re.sub(r"\x1b\[[0-9;]*m", "", s)
+
+def overflow_count():
+    try: return int(open("/tmp/herdr-mc/overflow").read().strip() or 0)
+    except Exception: return 0
+
+def read_dialog(pane_id, lines=20):
     txt = sh("herdr", "agent", "read", pane_id, "--source", "detection", "--lines", str(lines))
     try: txt = json.loads(txt).get("result", {}).get("text", txt)
     except Exception: pass
-    txt = re.sub(r"\x1b\[[0-9;?]*[a-zA-Z]", "", txt)
-    keep = [l.rstrip() for l in txt.splitlines() if l.strip() and not set(l.strip()) <= set("─│╭╮╰╯┃━ ")]
-    return keep[-6:]
+    return txt
 
-def render(a, tr, prev_state_t, cols, rows, ui):
+BLOCKED_HINT = {"yes_no": "y / n / esc", "options": "1-9 pick · esc", "free_text": "⏎ answer · esc",
+                "unknown": "y / n · 1-9 · ⏎ answer · esc"}
+
+def trail_line(trail, width, now):
+    """newest-right compact timeline: glyph label age[✗] · …, oldest dropped until it fits."""
+    items = []
+    for c in trail:
+        lbl = clip(os.path.basename(c["label"]) if c["name"] in ("Edit", "Write", "Read", "MultiEdit", "NotebookEdit") else c["label"], 18)
+        a = age(now - (c["done_ts"] or c["ts"])) if c.get("ts") else ""
+        err = f"{C['red']}✗{R}" if c.get("error") else ""
+        items.append(f"{C['sub']}{glyph(c['name'])}{R} {lbl} {D}{a}{R}{err}")
+    while items and len(plain(f" {D}·{R} ".join(items))) > width: items.pop(0)
+    return f" {D}·{R} ".join(items)
+
+SUB_GLYPH = {"working": ("◐", "blue"), "done": ("✓", "green"), "stale": ("◌", "yellow")}
+def agent_row(s, width, now):
+    g, col = SUB_GLYPH.get(s["status"], ("?", "sub"))
+    ind = "  " * (max(1, s["depth"]) - 1)
+    desc = clip(s["description"] or s["agent_type"] or s["agent_id"], max(12, width // 3))
+    if s.get("now"):
+        doing = f"{C['blue']}{s['now'][0]}{R} {clip(os.path.basename(s['now'][1]) if s['now'][0] in ('Edit','Write','Read') else s['now'][1], 40)}"
+    elif s.get("saying"): doing = f"{C['text']}{clip(s['saying'], 50)}{R}"
+    else: doing = f"{D}starting…{R}"
+    err = f" {C['red']}({s['errors']} ✗){R}" if s.get("errors") else ""
+    a = f"{D}{age(now - s['last_write_ts'])} ago{R}" if s.get("last_write_ts") else ""
+    row = f"{ind}{C[col]}{g}{R} {C['text']}{desc}{R}  {doing}{err}"
+    pad = width - len(plain(row)) - len(plain(a))
+    if pad > 1: return row + " " * pad + a
+    # too long: shrink the doing part, then drop the age, then the error marker, so the row never wraps
+    for a2, err2 in ((a, err), ("", err), ("", "")):
+        room = width - len(plain(f"{ind}{g} {desc}  ")) - len(plain(err2)) - (len(plain(a2)) + 1 if a2 else 0)
+        if room >= 6:
+            row = f"{ind}{C[col]}{g}{R} {C['text']}{desc}{R}  {C['text']}{clip(plain(doing), room)}{R}{err2}"
+            return row + (" " + a2 if a2 else "")
+    return clip(f"{ind}{g} {desc}", width)
+
+def render(a, tr, subs, prev_state_t, cols, rows, ui):
     status = a.get("agent_status", "unknown")
     glyph, label, col, banner = STATE.get(status, STATE["unknown"])
     now = time.time()
@@ -87,9 +128,11 @@ def render(a, tr, prev_state_t, cols, rows, ui):
 
     # header
     hdr_l = f"{col}{B}{glyph} {label}{R} {D}{age(now - prev_state_t)}{R}"
-    keys = "⏎ reply · g go" + (" · y/n/esc" if status == "blocked" else "")
+    if status == "blocked": keys = BLOCKED_HINT.get(ui.get("shape") or "unknown") + " · g go"
+    else: keys = "⏎ reply · e expand · g go · x close · n new" if W >= 90 else "⏎ e g x n"
     hdr_r = f"{D}{keys}{R}  {C['sub']}{a.get('pane_id','')} · {a.get('agent','')}{R}"
-    pad = W - len(re.sub(r"\x1b\[[0-9;]*m", "", hdr_l)) - len(re.sub(r"\x1b\[[0-9;]*m", "", hdr_r))
+    pad = W - len(plain(hdr_l)) - len(plain(hdr_r))
+    if pad < 1: hdr_r = f"{C['sub']}{a.get('pane_id','')}{R}"; pad = W - len(plain(hdr_l)) - len(plain(hdr_r))
     line(hdr_l + " " * max(1, pad) + hdr_r)
     if banner:
         line(f"{banner}{C['red']}{B}{' ' * W}{R}")
@@ -104,39 +147,62 @@ def render(a, tr, prev_state_t, cols, rows, ui):
     line(f"{C['sub']}{clip(loc, W + 20)}{R}")
     line()
 
-    body_budget = rows - 11 - (1 if banner else 0)
-    if tr.get("asked"):
-        asked_lines = wrap(tr["asked"], W - 8, 2 if body_budget > 6 else 1)
+    live = [x for x in subs if x["status"] == "working" or (x["status"] == "stale" and now - (x.get("last_write_ts") or 0) < 1800)]
+    fixed = 7 + (1 if banner else 0) + 2          # header..blank + footer rule + footer
+    body_budget = rows - fixed
+    # plan how many lines each section may take, dropping in spec order when short
+    want = dict(asked=2, now=2, saying=3, agents=min(4, len(live)), trail=1)
+    gaps = (1 if tr.get("asked") else 0) + 1 + (1 if live else 0)   # blank lines between sections
+    if status == "blocked":   # the dialog is what matters: give it the room, drop the rest first
+        want.update(saying=0, trail=0, agents=0, asked=1); gaps = 1 if tr.get("asked") else 0
+        want["now"] = max(3, body_budget - gaps)
+    def total(): return sum(v for v in want.values()) + gaps
+    for key, floor in (("trail", 0), ("agents", min(2, len(live))), ("saying", 1), ("asked", 1)):
+        while total() > body_budget and want[key] > floor: want[key] -= 1
+
+    if tr.get("asked") and want["asked"]:
+        asked_lines = wrap(tr["asked"], W - 8, want["asked"])
         line(f"{C['teal']}{B}ASKED{R}   {C['text']}{I}{asked_lines[0]}{R}")
         for extra in asked_lines[1:]: line(f"        {C['text']}{I}{extra}{R}")
         line()
 
     if status == "blocked":
-        for bl in blocked_text(a["pane_id"]) or ["(could not read the dialog)"]:
-            line(f"{C['red']}▌{R} {clip(bl, W - 2)}")
-        line()
-    elif tr.get("now"):
+        dl = [l for l in (ui.get("dialog") or []) if not re.match(r"^\s*(Enter|Esc|↑/↓|Tab) ", l)] or ["(could not read the dialog)"]
+        if len(dl) > want["now"]: dl = dl[: want["now"] - 1] + [f"… {len(dl) - want['now'] + 1} more lines (e to expand)"]
+        for bl in dl: line(f"{C['red']}▌{R} {clip(bl, W - 2)}")
+    elif tr.get("now") and not (tr.get("saying_ts") and tr.get("now_since") and tr["saying_ts"] > tr["now_since"]):
         n, lbl = tr["now"]
         since = f" {D}{age(now - tr['now_since'])}{R}" if tr.get("now_since") else ""
         line(f"{C['peach']}{B}NOW{R}     {C['blue']}{n}{R}{since}")
-        for l in wrap(lbl, W - 8, 2): line(f"        {C['text']}{l}{R}")
-        line()
-    elif tr.get("last_tool") and status == "working":
+        for l in wrap(lbl, W - 8, want["now"] - 1): line(f"        {C['text']}{l}{R}")
+    elif tr.get("last_tool") and status == "working" and not tr.get("saying"):
         n, lbl = tr["last_tool"]
         line(f"{C['peach']}{B}NOW{R}     {C['sub']}thinking…{R}  {D}after {n} {clip(lbl, W - 30)}{R}")
-        line()
 
-    if tr.get("said"):
-        said_lines = wrap(tr["said"], W - 8, max(1, min(3, body_budget - 4)))
-        line(f"{C['mauve']}{B}SAID{R}    {C['text']}{said_lines[0]}{R}")
+    if tr.get("saying") and want["saying"]:
+        label = "SAID" if status in ("idle", "done") else "SAYING"
+        said_lines = wrap(tr["saying"], W - 8, want["saying"])
+        line(f"{C['mauve']}{B}{label:<7}{R} {C['text']}{said_lines[0]}{R}")
         for extra in said_lines[1:]: line(f"        {C['text']}{extra}{R}")
+
+    if live and want["agents"]:
+        line()
+        shown = live[: want["agents"]]
+        for i, sa in enumerate(shown):
+            lab = f"{C['peach']}{B}AGENTS{R}  " if i == 0 else "        "
+            line(lab + agent_row(sa, W - 8, now))
+        if len(live) > len(shown) and total() < body_budget: line(f"        {D}+{len(live) - len(shown)} more{R}")
+
+    if tr.get("trail") and want["trail"]:
+        line(f"{C['sub']}{B}TRAIL{R}   " + trail_line(tr["trail"][-12:], W - 8, now))
 
     # footer pinned to bottom
     while len(L) < rows - 2: L.append("")
     L = L[: rows - 2]
     turn = f"turn {age(now - tr['turn_start'])}" if tr.get("turn_start") else ""
     stats = [turn, f"{tr.get('tools',0)} tools", f"{tr.get('edits',0)} edits"]
-    if tr.get("subagents"): stats.append(f"{tr['subagents']} subagents")
+    nlive = sum(1 for x in subs if x["status"] == "working")
+    if nlive: stats.append(f"{C['blue']}{nlive} agents{R}")
     err = tr.get("errors", 0)
     stats.append((C["red"] if err else C["sub"]) + f"{err} errors" + R)
     ctx = tr.get("ctx")
@@ -144,6 +210,8 @@ def render(a, tr, prev_state_t, cols, rows, ui):
         k = ctx // 1000
         cc = C["green"] if k < 100 else C["yellow"] if k < 160 else C["red"]
         stats.append(f"{cc}{k}k ctx{R}")
+    ov = overflow_count()
+    if ov: stats.append(f"{C['yellow']}+{ov} more{R}")
     if ui.get("reply") is not None:
         # reply input line replaces the stats footer while typing
         L = L[: rows - 3]
@@ -159,9 +227,9 @@ def render(a, tr, prev_state_t, cols, rows, ui):
         L.append(" " + foot)
         return "\033[H\033[2J" + "\n".join(L)
     foot = f" {D}·{R} ".join(s for s in stats if s)
-    plain = re.sub(r"\x1b\[[0-9;]*m", "", foot)
-    if len(plain) > W:  # drop least useful stats until it fits
-        for drop in ("edits", "tools", "subagents"):
+    foot_plain = plain(foot)
+    if len(foot_plain) > W:  # drop least useful stats until it fits
+        for drop in ("edits", "tools", "agents"):
             stats = [x for x in stats if drop not in re.sub(r"\x1b\[[0-9;]*m", "", x)]
             foot = f" {D}·{R} ".join(s for s in stats if s)
             if len(re.sub(r"\x1b\[[0-9;]*m", "", foot)) <= W: break
@@ -215,7 +283,8 @@ def read_key(timeout):
 
 def main():
     pane = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("MC_TARGET_PANE", "")
-    ui = {"reply": None, "flash": None}
+    ui = {"reply": None, "flash": None, "shape": None, "options": None, "dialog": None}
+    subs = []; tr = {}
     prev_status, prev_t = None, time.time()
     gone_since = None
     sys.stdout.write("\033[?25l"); sys.stdout.flush()
@@ -254,7 +323,28 @@ def main():
                 sid = (a.get("agent_session") or {}).get("value")
                 tp = transcript_path(sid) if sid else None
                 tr = read_transcript(tp) if tp else {}
-                sys.stdout.write(render(a, tr, prev_t, cols, rows, ui)); sys.stdout.flush()
+                subs = subagents(tp, tr, time.time()) if tp else []
+                if st == "blocked":
+                    dtxt = read_dialog(pane)
+                    ui["shape"], ui["options"] = classify(dtxt)
+                    dl = dialog_lines(dtxt, keep=None)
+                    cut = max((i for i, l in enumerate(dl) if l.strip().startswith("❯ ") and not re.match(r"^\s*❯\s*\d", l) and not re.match(r"^\s*❯\s*(Yes|No)", l, re.I)), default=-1)
+                    dl = dl[cut + 1:] if cut >= 0 and cut < len(dl) - 1 else dl
+                    keep = []
+                    for i, l in enumerate(dl):   # drop "Red" echoed under "1. Red"
+                        prev = dl[i - 1] if i else ""
+                        m = re.match(r"^\s*(?:❯\s*)?\d[.)]\s+(.*)$", prev)
+                        if m and l.strip() and m.group(1).strip().rstrip(".") == l.strip().rstrip("."): continue
+                        keep.append(l)
+                    ui["dialog"] = keep
+                else:
+                    ui["shape"] = ui["options"] = ui["dialog"] = None
+                try:
+                    frame = render(a, tr, subs, prev_t, cols, rows, ui)
+                except Exception as e:
+                    import traceback
+                    frame = "\033[H\033[2J " + C["red"] + "card render error: " + R + str(e) + "\n" + D + traceback.format_exc()[-800:] + R
+                sys.stdout.write(frame); sys.stdout.flush()
             # key loop until the next refresh
             deadline = time.time() + (0.25 if ui["reply"] is not None else INTERVAL)
             while True:
@@ -274,7 +364,7 @@ def main():
                     elif k == "kill": ui["reply"] = ""
                     elif len(k) >= 1: ui["reply"] += k
                     cols, rows = shutil.get_terminal_size((80, 24))
-                    sys.stdout.write(render(a, tr, prev_t, cols, rows, ui)); sys.stdout.flush()
+                    sys.stdout.write(render(a, tr, subs, prev_t, cols, rows, ui)); sys.stdout.flush()
                     deadline = time.time() + 0.25
                 elif a is None:
                     continue
@@ -284,6 +374,8 @@ def main():
                     else:
                         ui["reply"] = ""
                     break
+                elif k == "q":                         # ---- quit this card (grid.py restarts it)
+                    return
                 elif k == "g":                         # ---- go to the agent
                     ok, _ = act_focus(pane); flash(ui, "→ focused" if ok else "✗ focus failed", ok, 1.5); break
                 elif st == "blocked" and k in ("y", "n", "esc"):
