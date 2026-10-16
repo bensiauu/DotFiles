@@ -226,6 +226,9 @@ def render(a, tr, subs, prev_state_t, cols, rows, ui):
         L.append(f" {D}Enter sends · Esc cancels{R}")
         return "\033[H\033[2J" + "\n".join(L)
     L.append(f" {C['faint']}{'─' * W}{R}")
+    if ui.get("confirm") and time.time() < ui["confirm"][1]:
+        L.append(f" {C['yellow']}{B}{clip(ui['confirm'][0], W)}{R}")
+        return "\033[H\033[2J" + "\n".join(L)
     if ui.get("flash") and time.time() < ui["flash"][1]:
         foot = ui["flash"][0]
         L.append(" " + foot)
@@ -315,12 +318,16 @@ def render_expanded(a, tr, subs, prev_state_t, cols, rows, ui):
         tail = [f" {C['faint']}{'─' * W}{R}", f" {C['teal']}{B}REPLY ▸{R} {C['text']}{vis}{R}{bg(252)} {R}"]
     elif ui.get("flash") and time.time() < ui["flash"][1]:
         tail = [f" {C['faint']}{'─' * W}{R}", " " + ui["flash"][0]]
-    elif ui.get("confirm"):
-        tail = [f" {C['faint']}{'─' * W}{R}", f" {C['yellow']}{B}{ui['confirm'][0]}{R}"]
+    elif ui.get("confirm") and time.time() < ui["confirm"][1]:
+        tail = [f" {C['faint']}{'─' * W}{R}", f" {C['yellow']}{B}{clip(ui['confirm'][0], W)}{R}"]
     else:
         padf = W - len(plain(foot)) - len(plain(pos))
         tail = [f" {C['faint']}{'─' * W}{R}", " " + foot + (" " * padf + pos if padf > 1 else "")]
     return "\033[H\033[2J" + "\n".join(head + body + tail)
+
+def act_close(pane):
+    r = subprocess.run(["herdr", "pane", "close", pane], capture_output=True, text=True, timeout=6)
+    return _herdr_ok(r)
 
 def act_focus(pane):
     out = sh("herdr", "agent", "focus", pane)
@@ -476,7 +483,7 @@ def main():
                     frame = "\033[H\033[2J " + C["red"] + "card render error: " + R + str(e) + "\n" + D + traceback.format_exc()[-800:] + R
                 sys.stdout.write(frame); sys.stdout.flush()
             # key loop until the next refresh
-            deadline = time.time() + (0.25 if ui["reply"] is not None else INTERVAL)
+            deadline = time.time() + (0.25 if ui["reply"] is not None or ui.get("confirm") else INTERVAL)
             while True:
                 left = deadline - time.time()
                 if left <= 0: break
@@ -484,6 +491,13 @@ def main():
                 if k is None: continue
                 st = a.get("agent_status") if a else None
                 shape = ui.get("shape") or "unknown"
+                if ui.get("confirm") and time.time() >= ui["confirm"][1]: ui["confirm"] = None
+                if ui.get("confirm"):                  # ---- answering a y/n confirm line
+                    if k == "y":
+                        ok, msg = ui["confirm"][2](); ui["confirm"] = None
+                        flash(ui, ui["confirm_done"] if ok else f"✗ {msg}", ok)
+                    elif k in ("n", "esc"): ui["confirm"] = None; flash(ui, "cancelled", True, 1.0)
+                    break
                 if ui["reply"] is not None:            # ---- typing a reply
                     if k == "enter":
                         text = ui["reply"].strip(); ui["reply"] = None
@@ -521,6 +535,12 @@ def main():
                     else: ui["scroll"] = max(0, (ui.get("scroll") or 0) + step)
                     sys.stdout.write(render_expanded(a, tr, subs, prev_t, cols, rows, ui)); sys.stdout.flush()
                     continue
+                elif k == "x":                         # ---- close this agent's session (confirm)
+                    ttl = tr.get("title") or a.get("terminal_title_stripped") or "untitled"
+                    q = (f"agent is still {st} — close anyway? y/n" if st in ("working", "blocked")
+                         else f'close {pane} "{clip(ttl, 40)}"? y/n')
+                    ui["confirm"] = (q, time.time() + 5, lambda p=pane: act_close(p)); ui["confirm_done"] = f"✓ closed {pane}"
+                    break
                 elif k == "q":                         # ---- quit this card (grid.py restarts it)
                     return
                 elif k == "g":                         # ---- go to the agent
