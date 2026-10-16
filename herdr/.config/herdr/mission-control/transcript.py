@@ -186,12 +186,30 @@ def _cached_read(path, tail_bytes=TAIL_BYTES):
     return parsed
 
 
+_notif_cache = {}   # path -> [offset, set(ids)]
+_NOTIF_RE = re.compile(rb"<tool-use-id>(toolu_[A-Za-z0-9]+)</tool-use-id>")
+def notified_ids(path):
+    """Every <task-notification> tool-use-id in the whole file, scanned incrementally (only bytes
+    appended since the last call are read), so launches from earlier turns are still resolved."""
+    ent = _notif_cache.setdefault(path, [0, set()])
+    try:
+        size = os.path.getsize(path)
+        if size < ent[0]: ent[0], ent[1] = 0, set()          # file truncated/rotated
+        if size > ent[0]:
+            with open(path, "rb") as f:
+                f.seek(max(0, ent[0] - 64)); chunk = f.read()
+            ent[1].update(m.decode() for m in _NOTIF_RE.findall(chunk)); ent[0] = size
+    except OSError:
+        pass
+    return ent[1]
+
+
 def subagents(main_path, tr, now, stale_after=600):
     """Live and finished subagents of the session at main_path, depth-1 first, children under parents."""
     d = main_path[:-6] + "/subagents" if main_path.endswith(".jsonl") else main_path + "/subagents"
     if not os.path.isdir(d): return []
     launches = {l["tool_use_id"]: l for l in (tr or {}).get("agent_launches", []) if l.get("tool_use_id")}
-    notified = (tr or {}).get("notified", set())
+    notified = set((tr or {}).get("notified", set())) | notified_ids(main_path)
     out = []
     for jp in sorted(glob.glob(f"{d}/agent-*.jsonl")):
         agent_id = os.path.basename(jp)[6:-6]
@@ -201,12 +219,16 @@ def subagents(main_path, tr, now, stale_after=600):
         parsed = _cached_read(jp)
         if parsed is None: continue
         tool_id = meta.get("toolUseId"); launch = launches.get(tool_id) or {}
-        done = tool_id in notified
-        if not done and launch and launch.get("agent_id") and meta.get("requestShape") != "background":
-            done = True     # sync agent whose tool_result has arrived
         try: last_write = os.path.getmtime(jp)
         except OSError: last_write = 0
-        status = "done" if done else ("stale" if now - last_write > stale_after else "working")
+        recent = now - last_write <= stale_after
+        pending = parsed.get("now") is not None
+        finished = tool_id in notified or (bool(launch.get("agent_id")) and meta.get("requestShape") != "background")
+        # a notified agent can be resumed (SendMessage), so "done" needs no pending tool call too
+        if pending and recent: status = "working"
+        elif finished and not pending: status = "done"
+        elif recent: status = "working"
+        else: status = "stale"
         out.append(dict(
             agent_id=agent_id, description=meta.get("description") or launch.get("description") or "",
             agent_type=meta.get("agentType") or launch.get("subagent_type") or "", model=meta.get("model") or launch.get("model"),

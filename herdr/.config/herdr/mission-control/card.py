@@ -118,6 +118,22 @@ def agent_row(s, width, now):
             return row + (" " + a2 if a2 else "")
     return clip(f"{ind}{g} {desc}", width)
 
+def footer_stats(tr, subs, now, as_list=False):
+    turn = f"turn {age(now - tr['turn_start'])}" if tr.get("turn_start") else ""
+    stats = [turn, f"{tr.get('tools',0)} tools", f"{tr.get('edits',0)} edits"]
+    nlive = sum(1 for x in subs if x["status"] == "working")
+    if nlive: stats.append(f"{C['blue']}{nlive} agents{R}")
+    err = tr.get("errors", 0)
+    stats.append((C["red"] if err else C["sub"]) + f"{err} errors" + R)
+    ctx = tr.get("ctx")
+    if ctx:
+        k = ctx // 1000
+        cc = C["green"] if k < 100 else C["yellow"] if k < 160 else C["red"]
+        stats.append(f"{cc}{k}k ctx{R}")
+    ov = overflow_count()
+    if ov: stats.append(f"{C['yellow']}+{ov} more{R}")
+    return stats if as_list else f" {D}·{R} ".join(x for x in stats if x)
+
 def render(a, tr, subs, prev_state_t, cols, rows, ui):
     status = a.get("agent_status", "unknown")
     glyph, label, col, banner = STATE.get(status, STATE["unknown"])
@@ -199,19 +215,7 @@ def render(a, tr, subs, prev_state_t, cols, rows, ui):
     # footer pinned to bottom
     while len(L) < rows - 2: L.append("")
     L = L[: rows - 2]
-    turn = f"turn {age(now - tr['turn_start'])}" if tr.get("turn_start") else ""
-    stats = [turn, f"{tr.get('tools',0)} tools", f"{tr.get('edits',0)} edits"]
-    nlive = sum(1 for x in subs if x["status"] == "working")
-    if nlive: stats.append(f"{C['blue']}{nlive} agents{R}")
-    err = tr.get("errors", 0)
-    stats.append((C["red"] if err else C["sub"]) + f"{err} errors" + R)
-    ctx = tr.get("ctx")
-    if ctx:
-        k = ctx // 1000
-        cc = C["green"] if k < 100 else C["yellow"] if k < 160 else C["red"]
-        stats.append(f"{cc}{k}k ctx{R}")
-    ov = overflow_count()
-    if ov: stats.append(f"{C['yellow']}+{ov} more{R}")
+    stats = footer_stats(tr, subs, now, as_list=True)
     if ui.get("reply") is not None:
         # reply input line replaces the stats footer while typing
         L = L[: rows - 3]
@@ -235,6 +239,88 @@ def render(a, tr, subs, prev_state_t, cols, rows, ui):
             if len(re.sub(r"\x1b\[[0-9;]*m", "", foot)) <= W: break
     L.append(" " + foot)
     return "\033[H\033[2J" + "\n".join(L)
+
+OWN_PANE = os.environ.get("HERDR_PANE_ID", "")
+def act_zoom(on):
+    if not OWN_PANE: return False, "no HERDR_PANE_ID"
+    r = subprocess.run(["herdr", "pane", "zoom", OWN_PANE, "--on" if on else "--toggle"], capture_output=True, text=True, timeout=6)
+    return _herdr_ok(r)
+
+def hms(t):
+    try: return time.strftime("%H:%M:%S", time.localtime(t))
+    except Exception: return "--:--:--"
+
+def render_expanded(a, tr, subs, prev_state_t, cols, rows, ui):
+    """Full-pane, read-only, live detail view. Same data as the grid card, nothing truncated."""
+    status = a.get("agent_status", "unknown")
+    g, label, col, banner = STATE.get(status, STATE["unknown"])
+    now = time.time(); W = max(40, cols - 2); L = []
+    def line(s=""): L.append(" " + s)
+    def section(name, color):
+        if L and L[-1] != " ": line()
+        line(f"{color}{B}{name}{R}")
+    def para(text, indent="  "):
+        for l in wrap(text, W - len(indent), 400): line(indent + l)
+
+    title = tr.get("title") or a.get("terminal_title_stripped") or "untitled"
+    cwd = (a.get("cwd") or "").replace(HOME, "~")
+    hdr = f"{col}{B}{g} {label}{R} {D}{age(now - prev_state_t)}{R}   {C['text']}{B}{title}{R}   {C['sub']}{cwd}{R}"
+    right = f"{C['sub']}{a.get('pane_id','')} · {a.get('agent','')}{R}"
+    pad = W - len(plain(hdr)) - len(plain(right))
+    head = [" " + hdr + (" " * pad + right if pad > 1 else ""),
+            f" {D}e/esc back · ⏎ reply · g go · x close · n new · j/k J/K scroll · 0/$ top/bottom{R}",
+            f" {C['faint']}{'─' * W}{R}"]
+    if banner: head.insert(1, f" {banner}{C['red']}{B}{clip('  ⚠  ' + BLOCKED_HINT.get(ui.get('shape') or 'unknown'), W).ljust(W)}{R}")
+
+    if tr.get("asked"): section("ASKED", C["teal"]); para(tr["asked"])
+    if status == "blocked" and ui.get("dialog"):
+        section("BLOCKED", C["red"])
+        for l in ui["dialog"]: line(f"{C['red']}▌{R} {l}")
+    if tr.get("said"): section("REPLY", C["mauve"]); para(tr["said"])
+    if tr.get("saying") and tr["saying"] != tr.get("said"): section("SAYING", C["mauve"]); para(tr["saying"])
+    if tr.get("now") and status == "working":
+        section("NOW", C["peach"]); n, lbl = tr["now"]
+        since = f" {D}{age(now - tr['now_since'])}{R}" if tr.get("now_since") else ""
+        line(f"  {C['blue']}{n}{R}{since}  {lbl}")
+    if tr.get("files"):
+        section("FILES", C["green"]); wmax = max(len(f) for f, _ in tr["files"])
+        for f, n in tr["files"]: line(f"  {C['text']}{f.ljust(min(wmax, W - 14))}{R}  {D}{n} edit{'s' if n != 1 else ''}{R}")
+    if tr.get("trail"):
+        section("TRAIL", C["sub"])
+        for c in tr["trail"]:
+            dur = f"{(c['done_ts'] - c['ts']):.1f}s" if c.get("done_ts") and c.get("ts") else ("…" if not c.get("done_ts") else "")
+            mark = f"{C['red']}✗{R}" if c.get("error") else (f"{C['green']}✓{R}" if c.get("done_ts") else f"{C['blue']}◐{R}")
+            line(f"  {D}{hms(c['ts'])}{R}  {glyph(c['name'])} {c['name']:<9} {clip(c['label'], W - 36)}  {D}{dur:>6}{R} {mark}")
+    if subs:
+        section("AGENTS", C["peach"])
+        for sa in subs:
+            ind = "  " * max(1, sa["depth"])
+            sg, sc = SUB_GLYPH.get(sa["status"], ("?", "sub"))
+            meta = " · ".join(x for x in (sa.get("agent_type"), sa.get("model"), f"{sa['tools']} tools", f"{sa['edits']} edits", (f"{C['red']}{sa['errors']} errors{R}" if sa.get("errors") else "")) if x)
+            if sa["status"] == "done":
+                line(f"{ind}{C[sc]}{sg}{R} {C['text']}{sa['description'] or sa['agent_id']}{R}  {D}finished {age(now - sa['last_write_ts'])} ago · {meta}{R}"); continue
+            line(f"{ind}{C[sc]}{sg}{R} {C['text']}{B}{sa['description'] or sa['agent_id']}{R}  {D}{age(now - sa['last_write_ts'])} ago · {meta}{R}")
+            if sa.get("saying"): line(f"{ind}  {C['mauve']}SAYING{R}  {clip(sa['saying'], W - len(ind) - 10)}")
+            if sa.get("now"): line(f"{ind}  {C['peach']}NOW{R}     {C['blue']}{sa['now'][0]}{R} {clip(sa['now'][1], W - len(ind) - 20)}" + (f" {D}{age(now - sa['now_since'])}{R}" if sa.get("now_since") else ""))
+            if sa.get("trail"): line(f"{ind}  {C['sub']}TRAIL{R}   " + trail_line(sa["trail"][-10:], W - len(ind) - 10, now))
+
+    body_rows = rows - len(head) - 2
+    maxs = max(0, len(L) - body_rows); ui["scroll"] = min(max(0, ui.get("scroll") or 0), maxs)
+    body = L[ui["scroll"]: ui["scroll"] + body_rows]
+    while len(body) < body_rows: body.append("")
+    pos = f"{D}{ui['scroll'] + 1}-{min(len(L), ui['scroll'] + body_rows)}/{len(L)}{R}" if maxs else ""
+    foot = footer_stats(tr, subs, now)
+    if ui.get("reply") is not None:
+        buf = ui["reply"]; vis = buf[-(W - 12):] if len(buf) > W - 12 else buf
+        tail = [f" {C['faint']}{'─' * W}{R}", f" {C['teal']}{B}REPLY ▸{R} {C['text']}{vis}{R}{bg(252)} {R}"]
+    elif ui.get("flash") and time.time() < ui["flash"][1]:
+        tail = [f" {C['faint']}{'─' * W}{R}", " " + ui["flash"][0]]
+    elif ui.get("confirm"):
+        tail = [f" {C['faint']}{'─' * W}{R}", f" {C['yellow']}{B}{ui['confirm'][0]}{R}"]
+    else:
+        padf = W - len(plain(foot)) - len(plain(pos))
+        tail = [f" {C['faint']}{'─' * W}{R}", " " + foot + (" " * padf + pos if padf > 1 else "")]
+    return "\033[H\033[2J" + "\n".join(head + body + tail)
 
 def act_focus(pane):
     out = sh("herdr", "agent", "focus", pane)
@@ -303,10 +389,14 @@ def read_key(timeout):
     if not r: return None
     ch = os.read(sys.stdin.fileno(), 1)
     if ch in (b"\r", b"\n"): return "enter"
+    if ch == b"\t": return "tab"
     if ch == b"\x1b":
-        # swallow escape sequences (arrows etc.) so they do not type garbage
+        # alt-enter arrives as ESC CR; swallow other escape sequences (arrows etc.)
         r2, _, _ = select.select([sys.stdin], [], [], 0.02)
-        if r2: os.read(sys.stdin.fileno(), 8); return None
+        if r2:
+            seq = os.read(sys.stdin.fileno(), 8)
+            if seq in (b"\r", b"\n"): return "alt-enter"
+            return None
         return "esc"
     if ch in (b"\x7f", b"\x08"): return "bs"
     if ch == b"\x03": raise KeyboardInterrupt
@@ -322,7 +412,8 @@ def read_key(timeout):
 
 def main():
     pane = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("MC_TARGET_PANE", "")
-    ui = {"reply": None, "flash": None, "shape": None, "options": None, "dialog": None}
+    ui = {"reply": None, "flash": None, "shape": None, "options": None, "dialog": None,
+          "expanded": False, "scroll": 0, "confirm": None, "form": None}
     subs = []; tr = {}
     prev_status, prev_t = None, time.time()
     gone_since = None
@@ -379,7 +470,7 @@ def main():
                 else:
                     ui["shape"] = ui["options"] = ui["dialog"] = None
                 try:
-                    frame = render(a, tr, subs, prev_t, cols, rows, ui)
+                    frame = (render_expanded if ui.get("expanded") else render)(a, tr, subs, prev_t, cols, rows, ui)
                 except Exception as e:
                     import traceback
                     frame = "\033[H\033[2J " + C["red"] + "card render error: " + R + str(e) + "\n" + D + traceback.format_exc()[-800:] + R
@@ -404,7 +495,7 @@ def main():
                     elif k == "kill": ui["reply"] = ""
                     elif len(k) >= 1: ui["reply"] += k
                     cols, rows = shutil.get_terminal_size((80, 24))
-                    sys.stdout.write(render(a, tr, subs, prev_t, cols, rows, ui)); sys.stdout.flush()
+                    sys.stdout.write((render_expanded if ui.get("expanded") else render)(a, tr, subs, prev_t, cols, rows, ui)); sys.stdout.flush()
                     deadline = time.time() + 0.25
                 elif a is None:
                     continue
@@ -414,6 +505,22 @@ def main():
                     else:
                         ui["reply"] = ""
                     break
+                elif k == "e":                         # ---- expand / collapse
+                    ui["expanded"] = not ui["expanded"]; ui["scroll"] = 0
+                    ok, msg = act_zoom(ui["expanded"])
+                    if not ok: flash(ui, f"✗ zoom: {msg}", False)
+                    break
+                elif ui.get("expanded") and k in ("esc", "q") and st != "blocked":
+                    ui["expanded"] = False; act_zoom(False); break
+                elif ui.get("expanded") and k == "q":
+                    ui["expanded"] = False; act_zoom(False); break
+                elif ui.get("expanded") and k in ("j", "k", "J", "K", "0", "$"):
+                    step = {"j": 1, "k": -1, "J": max(1, (rows - 6) // 2), "K": -max(1, (rows - 6) // 2)}.get(k)
+                    if k == "0": ui["scroll"] = 0
+                    elif k == "$": ui["scroll"] = 10**6
+                    else: ui["scroll"] = max(0, (ui.get("scroll") or 0) + step)
+                    sys.stdout.write(render_expanded(a, tr, subs, prev_t, cols, rows, ui)); sys.stdout.flush()
+                    continue
                 elif k == "q":                         # ---- quit this card (grid.py restarts it)
                     return
                 elif k == "g":                         # ---- go to the agent

@@ -66,9 +66,20 @@ class Subagents(unittest.TestCase):
         self.assertEqual(s["aaa"]["status"], "stale")
 
     def test_notification_without_launch_is_ignored(self):
+        # the turn summary names no launches and a bogus notification; agents are still found via
+        # meta.json, and bbb is still done because the whole-file scan sees its notification
         tr = dict(self.tr); tr["notified"] = {"toolu_nonexistent"}; tr["agent_launches"] = []
         s = {x["agent_id"]: x for x in T.subagents(self.main, tr, self.now)}
-        self.assertEqual(set(s), {"aaa", "bbb", "ccc", "ddd"}); self.assertEqual(s["bbb"]["status"], "working")
+        self.assertEqual(set(s), {"aaa", "bbb", "ccc", "ddd"}); self.assertEqual(s["bbb"]["status"], "done")
+
+    def test_resumed_agent_is_working_again(self):
+        # notified earlier but its transcript shows a pending tool and recent writes
+        s = {x["agent_id"]: x for x in T.subagents(self.main, {"notified": {"toolu_01Ehb53SHgYNYB5xSBQLpJBu"}, "agent_launches": []}, self.now)}
+        self.assertEqual(s["aaa"]["status"], "working")
+
+    def test_notified_ids_scans_whole_file_incrementally(self):
+        ids = T.notified_ids(self.main); self.assertIn("toolu_011MssxZoubnUnfkGofJX1BN", ids)
+        self.assertIs(T.notified_ids(self.main), ids)
 
     def test_missing_dir_is_empty(self): self.assertEqual(T.subagents(str(FX / "fresh.jsonl"), {}, self.now), [])
 
