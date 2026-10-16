@@ -204,3 +204,6 @@ export NVM_DIR="$HOME/.config/nvm"
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+
+# Herdr mission control (agent dashboard tab)
+alias mc="$HOME/.config/herdr/mission-control/open.sh --focus"
