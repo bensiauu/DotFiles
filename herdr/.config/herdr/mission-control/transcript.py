@@ -165,3 +165,64 @@ def read_transcript(path, tail_bytes=TAIL_BYTES):
     out["files"] = sorted(files.items(), key=lambda kv: (-kv[1], kv[0]))
     out["agent_launches"] = list(launches.values())
     return out
+
+
+# ---- subagents -----------------------------------------------------------------------------
+
+_sub_cache = {}   # path -> ((mtime, size), parsed)
+def _cached_read(path, tail_bytes=TAIL_BYTES):
+    try: key = (os.path.getmtime(path), os.path.getsize(path))
+    except OSError: return None
+    hit = _sub_cache.get(path)
+    if hit and hit[0] == key: return hit[1]
+    parsed = read_transcript(path, tail_bytes)
+    try:
+        with open(path, "rb") as f:
+            first = json.loads(f.readline() or b"{}")
+        parsed["_started"] = ts(first.get("timestamp", "")) if isinstance(first, dict) else None
+    except Exception:
+        parsed["_started"] = None
+    _sub_cache[path] = (key, parsed)
+    return parsed
+
+
+def subagents(main_path, tr, now, stale_after=600):
+    """Live and finished subagents of the session at main_path, depth-1 first, children under parents."""
+    d = main_path[:-6] + "/subagents" if main_path.endswith(".jsonl") else main_path + "/subagents"
+    if not os.path.isdir(d): return []
+    launches = {l["tool_use_id"]: l for l in (tr or {}).get("agent_launches", []) if l.get("tool_use_id")}
+    notified = (tr or {}).get("notified", set())
+    out = []
+    for jp in sorted(glob.glob(f"{d}/agent-*.jsonl")):
+        agent_id = os.path.basename(jp)[6:-6]
+        try: meta = json.load(open(jp[:-6] + ".meta.json"))
+        except Exception: meta = {}
+        if not isinstance(meta, dict): meta = {}
+        parsed = _cached_read(jp)
+        if parsed is None: continue
+        tool_id = meta.get("toolUseId"); launch = launches.get(tool_id) or {}
+        done = tool_id in notified
+        if not done and launch and launch.get("agent_id") and meta.get("requestShape") != "background":
+            done = True     # sync agent whose tool_result has arrived
+        try: last_write = os.path.getmtime(jp)
+        except OSError: last_write = 0
+        status = "done" if done else ("stale" if now - last_write > stale_after else "working")
+        out.append(dict(
+            agent_id=agent_id, description=meta.get("description") or launch.get("description") or "",
+            agent_type=meta.get("agentType") or launch.get("subagent_type") or "", model=meta.get("model") or launch.get("model"),
+            depth=int(meta.get("spawnDepth") or 1), parent_id=meta.get("parentAgentId"),
+            status=status, started_ts=parsed.get("_started"), last_write_ts=last_write,
+            tools=parsed.get("tools", 0), edits=parsed.get("edits", 0), errors=parsed.get("errors", 0),
+            saying=parsed.get("saying"), now=parsed.get("now"), now_since=parsed.get("now_since"), trail=parsed.get("trail", [])))
+    # order: depth-1 by start, each followed by its descendants by start
+    by_parent = {}
+    for s in out: by_parent.setdefault(s["parent_id"] if s["depth"] > 1 else None, []).append(s)
+    for v in by_parent.values(): v.sort(key=lambda s: s["started_ts"] or 0)
+    ordered, seen = [], set()
+    def walk(s):
+        if s["agent_id"] in seen: return
+        seen.add(s["agent_id"]); ordered.append(s)
+        for c in by_parent.get(s["agent_id"], []): walk(c)
+    for s in by_parent.get(None, []): walk(s)
+    for s in out: walk(s)   # orphans whose parent is missing
+    return ordered

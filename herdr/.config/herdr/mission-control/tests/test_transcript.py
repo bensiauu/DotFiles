@@ -40,5 +40,38 @@ class Glyph(unittest.TestCase):
         self.assertEqual(T.glyph("Bash"), "▶"); self.assertEqual(T.glyph("Agent"), "⇄"); self.assertEqual(T.glyph("Skill"), "·")
 
 
+class Subagents(unittest.TestCase):
+    def setUp(self):
+        self.main = str(FX / "main.jsonl"); self.tr = T.read_transcript(self.main)
+        self.now = max(os.path.getmtime(p) for p in (FX / "main" / "subagents").glob("*.jsonl")) + 1
+        self.subs = {s["agent_id"]: s for s in T.subagents(self.main, self.tr, self.now)}
+
+    def test_finds_all_four(self): self.assertEqual(set(self.subs), {"aaa", "bbb", "ccc", "ddd"})
+
+    def test_live_has_pending_tool(self):
+        self.assertEqual(self.subs["aaa"]["status"], "working"); self.assertIsNotNone(self.subs["aaa"]["now"])
+
+    def test_notified_is_done(self): self.assertEqual(self.subs["bbb"]["status"], "done")
+
+    def test_grandchild_attributed(self):
+        self.assertEqual(self.subs["ccc"]["depth"], 2); self.assertEqual(self.subs["ccc"]["parent_id"], "aaa")
+        order = [s["agent_id"] for s in T.subagents(self.main, self.tr, self.now)]
+        self.assertLess(order.index("aaa"), order.index("ccc"))
+
+    def test_malformed_meta_falls_back(self):
+        self.assertEqual(self.subs["ddd"]["description"], ""); self.assertEqual(self.subs["ddd"]["depth"], 1)
+
+    def test_stale_after_threshold(self):
+        s = {x["agent_id"]: x for x in T.subagents(self.main, self.tr, self.now + 10_000)}
+        self.assertEqual(s["aaa"]["status"], "stale")
+
+    def test_notification_without_launch_is_ignored(self):
+        tr = dict(self.tr); tr["notified"] = {"toolu_nonexistent"}; tr["agent_launches"] = []
+        s = {x["agent_id"]: x for x in T.subagents(self.main, tr, self.now)}
+        self.assertEqual(set(s), {"aaa", "bbb", "ccc", "ddd"}); self.assertEqual(s["bbb"]["status"], "working")
+
+    def test_missing_dir_is_empty(self): self.assertEqual(T.subagents(str(FX / "fresh.jsonl"), {}, self.now), [])
+
+
 if __name__ == "__main__":
     unittest.main()
