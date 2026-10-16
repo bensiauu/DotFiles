@@ -14,13 +14,13 @@ Keys:  Enter  reply to this agent (type, Enter sends, Esc cancels)
 Close the mission-control tab to stop everything; grid.py exits with the tab.
 """
 import glob, json, os, re, select, shutil, subprocess, sys, time, termios, tty
-from datetime import datetime, timezone
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from transcript import read_transcript, transcript_path, tool_label, ts, clip, glyph
 
 HOME = os.path.expanduser("~")
 MY_PANE = os.environ.get("HERDR_PANE_ID", f"pid{os.getpid()}").replace(":", "_")
 NTFY = f"{HOME}/.claude/hooks/ntfy-notify.sh"
 INTERVAL = float(os.environ.get("MC_INTERVAL", "1.5"))
-TAIL_BYTES = 1_500_000
 
 # catppuccin-latte-ish 256 colours
 def fg(n): return f"\033[38;5;{n}m"
@@ -54,14 +54,6 @@ def age(sec):
     if sec < 3600: return f"{sec//60}m{sec%60:02d}s"
     return f"{sec//3600}h{sec%3600//60:02d}m"
 
-def ts(s):
-    try: return datetime.fromisoformat(s.replace("Z", "+00:00")).timestamp()
-    except Exception: return None
-
-def clip(s, n):
-    s = re.sub(r"\s+", " ", s or "").strip()
-    return s if len(s) <= n else s[: max(0, n - 1)] + "…"
-
 def wrap(s, width, max_lines):
     words = re.sub(r"\s+", " ", s or "").strip().split(" ")
     lines, cur = [], ""
@@ -76,95 +68,6 @@ def wrap(s, width, max_lines):
         lines[-1] = clip(lines[-1], width)
         if not lines[-1].endswith("…"): lines[-1] = lines[-1][: width - 1] + "…"
     return lines
-
-_tp_cache = {}
-def transcript_path(sid):
-    if sid in _tp_cache and os.path.exists(_tp_cache[sid]): return _tp_cache[sid]
-    hits = glob.glob(f"{HOME}/.claude/projects/*/{sid}.jsonl")
-    if hits: _tp_cache[sid] = hits[0]; return hits[0]
-    return None
-
-def tool_label(name, inp):
-    inp = inp or {}
-    if name == "Bash": return inp.get("description") or clip(inp.get("command", ""), 70)
-    if name in ("Edit", "Write", "Read", "MultiEdit", "NotebookEdit"):
-        return (inp.get("file_path") or inp.get("notebook_path") or "").replace(HOME, "~")
-    if name in ("Grep", "Glob"): return inp.get("pattern", "")
-    if name == "Agent": return f"{inp.get('subagent_type','agent')}: {inp.get('description','')}"
-    if name == "Skill": return inp.get("skill", "")
-    if name in ("WebFetch", "WebSearch"): return inp.get("url") or inp.get("query", "")
-    if name == "AskUserQuestion": return "asking you a question"
-    for k in ("description", "query", "prompt", "pattern", "url"):
-        if inp.get(k): return clip(str(inp[k]), 70)
-    return ""
-
-def read_transcript(path):
-    """Return summary dict for the current/last turn from the tail of the JSONL."""
-    out = dict(title=None, asked=None, said=None, now=None, now_since=None, turn_start=None,
-               tools=0, edits=0, errors=0, ctx=None, subagents=0, last_tool=None, last_tool_ts=None)
-    try:
-        size = os.path.getsize(path)
-        with open(path, "rb") as f:
-            if size > TAIL_BYTES: f.seek(size - TAIL_BYTES); f.readline()
-            raw = f.read().decode("utf-8", "replace")
-    except Exception:
-        return out
-    recs = []
-    for line in raw.splitlines():
-        try: recs.append(json.loads(line))
-        except Exception: pass
-    for r in recs:
-        if r.get("type") == "ai-title": out["title"] = r.get("aiTitle")
-    # find start of the latest human turn (skip harness-injected user messages)
-    def human(txt):
-        t = txt.lstrip()
-        if not t: return False
-        if t.startswith("<"): return False                      # <task-notification>, <system-reminder>, <command-name>…
-        if t.startswith("Base directory for this skill"): return False
-        if "[Request interrupted" in t[:40]: return False
-        return True
-    start = None
-    for i in range(len(recs) - 1, -1, -1):
-        r = recs[i]
-        if r.get("type") != "user": continue
-        c = r.get("message", {}).get("content")
-        if isinstance(c, str) and human(c):
-            start = i; out["asked"] = c; break
-        if isinstance(c, list):
-            if any(x.get("type") == "tool_result" for x in c): continue
-            txt = " ".join(x.get("text", "") for x in c if x.get("type") == "text")
-            if human(txt):
-                start = i; out["asked"] = txt; break
-    if start is None:
-        lp = next((r.get("lastPrompt") for r in reversed(recs) if r.get("type") == "last-prompt"), None)
-        if lp and human(lp): out["asked"] = lp
-        start = 0
-    out["turn_start"] = ts(recs[start].get("timestamp", "")) if recs else None
-    pending = {}  # tool_use id -> (name, label, ts)
-    for r in recs[start:]:
-        t = r.get("type"); m = r.get("message", {}); c = m.get("content")
-        if t == "assistant" and isinstance(c, list):
-            u = m.get("usage") or {}
-            if u:
-                out["ctx"] = (u.get("input_tokens", 0) + u.get("cache_read_input_tokens", 0) + u.get("cache_creation_input_tokens", 0))
-            for x in c:
-                if x.get("type") == "text" and x.get("text", "").strip(): out["said"] = x["text"]
-                if x.get("type") == "tool_use":
-                    out["tools"] += 1
-                    n = x.get("name", "?")
-                    if n in ("Edit", "Write", "MultiEdit", "NotebookEdit"): out["edits"] += 1
-                    if n == "Agent": out["subagents"] += 1
-                    pending[x.get("id")] = (n, tool_label(n, x.get("input")), ts(r.get("timestamp", "")))
-                    out["last_tool"] = (n, tool_label(n, x.get("input"))); out["last_tool_ts"] = ts(r.get("timestamp", ""))
-        elif t == "user" and isinstance(c, list):
-            for x in c:
-                if x.get("type") == "tool_result":
-                    if x.get("is_error"): out["errors"] += 1
-                    pending.pop(x.get("tool_use_id"), None)
-    if pending:
-        n, label, t0 = list(pending.values())[-1]
-        out["now"] = (n, label); out["now_since"] = t0
-    return out
 
 def blocked_text(pane_id, lines=14):
     txt = sh("herdr", "agent", "read", pane_id, "--source", "detection", "--lines", str(lines))
