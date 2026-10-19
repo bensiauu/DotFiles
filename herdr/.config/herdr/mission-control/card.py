@@ -17,6 +17,7 @@ import glob, json, os, re, select, shutil, subprocess, sys, time, termios, tty
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from transcript import read_transcript, transcript_path, tool_label, ts, clip, glyph, subagents
 from blocked import classify, dialog_lines
+import projects
 
 HOME = os.path.expanduser("~")
 MY_PANE = os.environ.get("HERDR_PANE_ID", f"pid{os.getpid()}").replace(":", "_")
@@ -325,6 +326,73 @@ def render_expanded(a, tr, subs, prev_state_t, cols, rows, ui):
         tail = [f" {C['faint']}{'─' * W}{R}", " " + foot + (" " * padf + pos if padf > 1 else "")]
     return "\033[H\033[2J" + "\n".join(head + body + tail)
 
+SHELLS = {"zsh", "bash", "fish", "sh"}
+def shell_idle(pane):
+    """True when the pane's foreground process is a bare shell (safe to start an agent in)."""
+    try:
+        info = json.loads(sh("herdr", "pane", "process-info", "--pane", pane)).get("result", {}).get("process_info", {})
+    except Exception:
+        return False
+    fg = info.get("foreground_processes") or []
+    return bool(fg) and all(p.get("name") in SHELLS for p in fg)
+
+def launch(prompt, project, ws):
+    """New unfocused tab in ws at project, start claude in it, send the prompt. -> (ok, msg)"""
+    name = projects.slug(prompt)
+    try:
+        r = subprocess.run(["herdr", "tab", "create", "--workspace", ws, "--cwd", project, "--label", name, "--no-focus"],
+                           capture_output=True, text=True, timeout=10)
+        ok, msg = _herdr_ok(r)
+        if not ok: return False, f"tab create: {msg}"
+        res = json.loads(r.stdout).get("result", {})
+        pane = (res.get("root_pane") or {}).get("pane_id")
+        if not pane: return False, "tab create: no pane id in result"
+        t0 = time.time()
+        while time.time() - t0 < 10 and not shell_idle(pane): time.sleep(0.4)
+        if not shell_idle(pane): return False, f"shell in {pane} not ready"
+        r = subprocess.run(["herdr", "agent", "start", name, "--kind", "claude", "--pane", pane, "--timeout", "60000"],
+                           capture_output=True, text=True, timeout=75)
+        ok, msg = _herdr_ok(r)
+        if not ok and msg != "agent_not_ready":      # not_ready = blocked on a startup dialog; the card will show it
+            return False, f"agent start: {msg}"
+        if ok:
+            ok, msg = act_reply(pane, prompt)
+            if not ok: return False, f"prompt: {msg}"
+        projects.write_last(project)
+        return True, f"✓ started {name} in {pane}" + ("" if ok else " (answer its startup prompt, then re-send)")
+    except Exception as e:
+        return False, str(e)[:70]
+
+def render_form(a, tr, subs, prev_state_t, cols, rows, ui):
+    """The new-task form, drawn in the card body."""
+    f = ui["form"]; W = max(30, cols - 2); L = []
+    def line(s=""): L.append(" " + s)
+    line(f"{C['teal']}{B}NEW TASK{R}   {D}Enter launches · Alt+Enter newline · Tab project · Esc cancels{R}")
+    line(f"{C['faint']}{'─' * W}{R}")
+    text_lines = f["text"].split("\n") or [""]
+    avail = max(3, rows - 9)
+    shown = text_lines[-avail:]
+    for i, tl in enumerate(shown):
+        vis = tl[-(W - 4):] if len(tl) > W - 4 else tl
+        cursor = f"{bg(252)} {R}" if i == len(shown) - 1 else ""
+        line(f"{C['text']}{'▸' if i == 0 and len(shown) == len(text_lines) else ' '} {vis}{cursor}{R}")
+    while len(L) < rows - 5: L.append("")
+    L = L[: rows - 5]
+    line(f"{C['faint']}{'─' * W}{R}")
+    parts = []
+    for i, c in enumerate(f["cands"]):
+        lab = c.replace(HOME, "~")
+        parts.append(f"{C['blue']}{B}[{lab}]{R}" if i == f["sel"] else f"{C['sub']}{lab}{R}")
+    row = f"{C['peach']}{B}PROJECT{R}  " + "  ".join(parts)
+    line(clip(row, W + 60) if len(plain(row)) <= W else f"{C['peach']}{B}PROJECT{R}  {C['blue']}{B}[{f['cands'][f['sel']].replace(HOME, '~')}]{R}  {D}Tab cycles ({f['sel'] + 1}/{len(f['cands'])}){R}")
+    if ui.get("flash") and time.time() < ui["flash"][1]: line(ui["flash"][0])
+    else: line(f"{D}{'auto-picked from your prompt' if not f['pinned'] else 'pinned'} · {a.get('pane_id', '') if a else ''}{R}")
+    return "\033[H\033[2J" + "\n".join(L)
+
+def open_form(ui, snap_agents):
+    cands = projects.candidates(snap_agents) or [HOME]
+    ui["form"] = dict(text="", cands=cands, sel=projects.preselect("", cands, projects.read_last()), pinned=False)
+
 def act_close(pane):
     r = subprocess.run(["herdr", "pane", "close", pane], capture_output=True, text=True, timeout=6)
     return _herdr_ok(r)
@@ -443,10 +511,13 @@ def main():
             cols, rows = shutil.get_terminal_size((80, 24))
             if a is None:
                 os.makedirs("/tmp/herdr-mc", exist_ok=True)
-                with open(f"/tmp/herdr-mc/card-{MY_PANE}", "w") as f: f.write("")
+                with open(f"/tmp/herdr-mc/card-{MY_PANE}", "w") as f: f.write("form" if ui.get("form") else "")
                 gone_since = gone_since or time.time()
-                msg = f"{C['sub']}○ no agent in {pane or '(unassigned)'}{R}\n {D}waiting for a new agent to adopt · {age(time.time()-gone_since)}{R}\n {D}this pane closes itself shortly{R}"
-                sys.stdout.write("\033[H\033[2J\n " + msg); sys.stdout.flush()
+                if ui.get("form"):
+                    sys.stdout.write(render_form(None, {}, [], prev_t, cols, rows, ui)); sys.stdout.flush()
+                else:
+                    msg = f"{C['sub']}○ no agent in {pane or '(unassigned)'}{R}\n {D}waiting for a new agent to adopt · {age(time.time()-gone_since)}{R}\n {D}this pane closes itself shortly · n starts a new task{R}"
+                    sys.stdout.write("\033[H\033[2J\n " + msg); sys.stdout.flush()
             else:
                 os.makedirs("/tmp/herdr-mc", exist_ok=True)
                 with open(f"/tmp/herdr-mc/claim-{os.getpid()}", "w") as f: f.write(pane)
@@ -477,7 +548,7 @@ def main():
                 else:
                     ui["shape"] = ui["options"] = ui["dialog"] = None
                 try:
-                    frame = (render_expanded if ui.get("expanded") else render)(a, tr, subs, prev_t, cols, rows, ui)
+                    frame = (render_form if ui.get("form") else render_expanded if ui.get("expanded") else render)(a, tr, subs, prev_t, cols, rows, ui)
                 except Exception as e:
                     import traceback
                     frame = "\033[H\033[2J " + C["red"] + "card render error: " + R + str(e) + "\n" + D + traceback.format_exc()[-800:] + R
@@ -498,6 +569,31 @@ def main():
                         flash(ui, ui["confirm_done"] if ok else f"✗ {msg}", ok)
                     elif k in ("n", "esc"): ui["confirm"] = None; flash(ui, "cancelled", True, 1.0)
                     break
+                if ui.get("form") is not None:         # ---- new-task form
+                    f = ui["form"]
+                    if k == "esc": ui["form"] = None; flash(ui, "cancelled", True, 1.0)
+                    elif k == "enter":
+                        text = f["text"].strip()
+                        if not text: flash(ui, "type what you want done first", False, 2)
+                        else:
+                            ws = (a or {}).get("workspace_id") or next((x.get("workspace_id") for x in agents if x.get("workspace_id")), None) \
+                                 or snap.get("focused_workspace_id") or (os.environ.get("HERDR_TAB_ID", "w1:").split(":")[0])
+                            flash(ui, "starting…", True, 90)
+                            sys.stdout.write(render_form(a, tr, subs, prev_t, cols, rows, ui)); sys.stdout.flush()
+                            ok, msg = launch(text, f["cands"][f["sel"]], ws)
+                            if ok: ui["form"] = None
+                            flash(ui, msg if ok else f"✗ {msg}", ok, 4)
+                    elif k == "alt-enter": f["text"] += "\n"
+                    elif k == "tab": f["sel"] = (f["sel"] + 1) % len(f["cands"]); f["pinned"] = True
+                    elif k == "bs": f["text"] = f["text"][:-1]
+                    elif k == "kill": f["text"] = ""
+                    elif len(k) == 1 or k.isprintable(): f["text"] += k
+                    if ui.get("form") and not f["pinned"]: f["sel"] = projects.preselect(f["text"], f["cands"], projects.read_last())
+                    cols, rows = shutil.get_terminal_size((80, 24))
+                    if ui.get("form"): sys.stdout.write(render_form(a, tr, subs, prev_t, cols, rows, ui)); sys.stdout.flush()
+                    else: break
+                    deadline = time.time() + 0.25
+                    continue
                 if ui["reply"] is not None:            # ---- typing a reply
                     if k == "enter":
                         text = ui["reply"].strip(); ui["reply"] = None
@@ -511,6 +607,8 @@ def main():
                     cols, rows = shutil.get_terminal_size((80, 24))
                     sys.stdout.write((render_expanded if ui.get("expanded") else render)(a, tr, subs, prev_t, cols, rows, ui)); sys.stdout.flush()
                     deadline = time.time() + 0.25
+                elif k == "n" and not (st == "blocked" and shape in ("yes_no", "unknown")):   # ---- new task
+                    open_form(ui, agents); break
                 elif a is None:
                     continue
                 elif k == "enter":                     # ---- start a reply / free-text answer
