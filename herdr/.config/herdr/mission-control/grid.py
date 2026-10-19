@@ -56,15 +56,26 @@ while True:
     card_panes = [p["pane_id"] for p in layout["panes"]]
     agents = [a for a in snap.get("agents", []) if a.get("tab_id") != TAB]
     cm = card_map()
-    shown = {v for v in cm.values() if v}
+    shown = {v for v in cm.values() if v and v != "form"}
     unassigned = [a for a in agents if a["pane_id"] not in shown]
-    empty = [p for p in card_panes if not cm.get(p)]
+    empty = [p for p in card_panes if not cm.get(p)]          # "form" = empty card with the new-task form open: keep it
+    healable = [p for p in empty if p not in cm]               # no card process writing at all
 
     # heal: a card pane whose card process is gone but whose shell is idle gets a fresh card
-    for p in empty:
+    for p in healable:
         if shell_idle(p):
             herdr("pane", "run", p, f"export MC_TAB_ID={TAB}; exec {CARD}")
             empty_since.pop(p, None)
+    # overflow: agents that will never get a card at the cap; cards show "+N more" from this file
+    over = len(unassigned) - len(empty) if len(card_panes) >= 8 else 0
+    if over > 0:
+        with open("/tmp/herdr-mc/overflow", "w") as f: f.write(str(over))
+    else:
+        try: os.remove("/tmp/herdr-mc/overflow")
+        except OSError: pass
+    # an expanded (zoomed) card must not be split or reclaimed under the user
+    if layout.get("zoomed"):
+        time.sleep(TICK); continue
     # grow: more agents than cards (and no empty card to adopt into)
     if unassigned and not empty and len(card_panes) < 8:
         src, direction = pick_split(layout["panes"])
