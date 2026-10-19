@@ -1,0 +1,4 @@
+
+# python bytecode (mission-control tests)
+__pycache__/
+*.pyc
