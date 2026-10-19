@@ -2,16 +2,16 @@
 """One agent, one pane. Renders a live status card for the Herdr agent in PANE_ID.
 
 Data sources
-  herdr api snapshot              -> status (working/idle/blocked), title, cwd, session id
-  ~/.claude/projects/*/<sid>.jsonl -> what it was asked, what it's doing now, what it last said
-  herdr agent read --source detection (blocked only) -> the dialog it is stuck on
+  herdr api snapshot                          -> status (working/idle/blocked), title, cwd, session id
+  ~/.claude/projects/*/<sid>.jsonl            -> asked / saying / now / trail / files (transcript.py)
+  <sid>/subagents/agent-*.jsonl + .meta.json  -> live subagents and what each is doing
+  herdr agent read --source detection         -> the dialog a blocked agent is stuck on (blocked.py)
 
 Usage: card.py [<agent pane_id>]   (adopts a new unassigned agent if its own agent exits)
-Keys:  Enter  reply to this agent (type, Enter sends, Esc cancels)
-       g      go to the agent's pane
-       y / n  answer a blocked agent's yes/no prompt
-       Esc    answer a blocked prompt with Escape
-Close the mission-control tab to stop everything; grid.py exits with the tab.
+Keys:  ⏎ reply · e expand/collapse · g go to pane · x close session · n new task · q quit card
+       blocked: y/n (arrow Yes/No), 1-9 (numbered options), ⏎ (free text), Esc
+       expanded: j/k J/K 0/$ scroll
+See README.md for the full key map. Close the mission-control tab to stop everything.
 """
 import glob, json, os, re, select, shutil, subprocess, sys, time, termios, tty
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
