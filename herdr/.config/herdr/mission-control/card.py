@@ -16,7 +16,8 @@ See README.md for the full key map. Close the mission-control tab to stop everyt
 import glob, json, os, re, select, shutil, subprocess, sys, time, termios, tty
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from transcript import read_transcript, transcript_path, tool_label, ts, clip, glyph, subagents
-from blocked import classify, dialog_lines
+from blocked import classify, dialog_lines, region, display, yes_no_options
+from keys import read_key, PASTE_ON, PASTE_OFF
 import projects
 
 HOME = os.path.expanduser("~")
@@ -79,7 +80,10 @@ def overflow_count():
 
 def read_dialog(pane_id, lines=20):
     txt = sh("herdr", "agent", "read", pane_id, "--source", "detection", "--lines", str(lines))
-    try: txt = json.loads(txt).get("result", {}).get("text", txt)
+    try:
+        j = json.loads(txt)
+        if isinstance(j, dict) and j.get("error"): return ""        # herdr error, not dialog text
+        txt = j.get("result", {}).get("text", txt)
     except Exception: pass
     return txt
 
@@ -425,9 +429,10 @@ def act_reply(pane, text, blocked=False):
 def act_yes_no(pane, k, dialog):
     """Answer an arrow-selected Yes/No list (e.g. the folder-trust prompt): move the cursor to the
     option that starts with Yes/No, then Enter. Falls back to typing the letter + Enter when the
-    dialog shows no such list (a "(y/n)" question)."""
-    opts = [re.sub(r"^\s*❯\s*", "", l).strip() for l in (dialog or []) if re.match(r"^\s*(❯\s*)?(Yes|No)\b", l.strip(), re.I)]
-    cur = next((i for i, l in enumerate(l for l in (dialog or []) if re.match(r"^\s*(❯\s*)?(Yes|No)\b", l.strip(), re.I)) if l.strip().startswith("❯")), 0)
+    dialog shows no such list (a "(y/n)" question). `dialog` is the dialog region only."""
+    rows = yes_no_options(dialog or [])
+    opts = [lab for lab, _ in rows]
+    cur = next((i for i, (_, sel) in enumerate(rows) if sel), 0)
     want = next((i for i, o in enumerate(opts) if o.lower().startswith("yes" if k == "y" else "no")), None)
     if want is None:
         ok, msg = act_keys(pane, k)
@@ -458,33 +463,6 @@ def act_keys(pane, *keys):
 def flash(ui, msg, ok=True, secs=2.5):
     ui["flash"] = ((C["green"] if ok else C["red"]) + msg + R, time.time() + secs)
 
-def read_key(timeout):
-    """Return one logical key: a printable char, 'enter', 'esc', 'bs', or None."""
-    r, _, _ = select.select([sys.stdin], [], [], timeout)
-    if not r: return None
-    ch = os.read(sys.stdin.fileno(), 1)
-    if ch in (b"\r", b"\n"): return "enter"
-    if ch == b"\t": return "tab"
-    if ch == b"\x1b":
-        # alt-enter arrives as ESC CR; swallow other escape sequences (arrows etc.)
-        r2, _, _ = select.select([sys.stdin], [], [], 0.02)
-        if r2:
-            seq = os.read(sys.stdin.fileno(), 8)
-            if seq in (b"\r", b"\n"): return "alt-enter"
-            return None
-        return "esc"
-    if ch in (b"\x7f", b"\x08"): return "bs"
-    if ch == b"\x03": raise KeyboardInterrupt
-    if ch == b"\x15": return "kill"  # ctrl-u clears the reply line
-    if ch < b" ": return None
-    # utf-8 continuation
-    try:
-        n = 1 if ch[0] < 0x80 else 2 if ch[0] < 0xE0 else 3 if ch[0] < 0xF0 else 4
-        if n > 1: ch += os.read(sys.stdin.fileno(), n - 1)
-        return ch.decode("utf-8")
-    except Exception:
-        return None
-
 def main():
     pane = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("MC_TARGET_PANE", "")
     ui = {"reply": None, "flash": None, "shape": None, "options": None, "dialog": None,
@@ -492,7 +470,7 @@ def main():
     subs = []; tr = {}
     prev_status, prev_t = None, time.time()
     gone_since = None
-    sys.stdout.write("\033[?25l"); sys.stdout.flush()
+    sys.stdout.write("\033[?25l" + PASTE_ON); sys.stdout.flush()
     try:
         while True:
             snap = snapshot(); agents = snap.get("agents", [])
@@ -509,6 +487,8 @@ def main():
                 if free:
                     pane = free[0]["pane_id"]; a = free[0]; prev_status, prev_t = None, time.time(); gone_since = None
             cols, rows = shutil.get_terminal_size((80, 24))
+            if a is None and ui.get("expanded"):
+                ui["expanded"] = False; act_zoom(False)
             if a is None:
                 os.makedirs("/tmp/herdr-mc", exist_ok=True)
                 with open(f"/tmp/herdr-mc/card-{MY_PANE}", "w") as f: f.write("form" if ui.get("form") else "")
@@ -535,9 +515,7 @@ def main():
                 if st == "blocked":
                     dtxt = read_dialog(pane)
                     ui["shape"], ui["options"] = classify(dtxt)
-                    dl = dialog_lines(dtxt, keep=None)
-                    cut = max((i for i, l in enumerate(dl) if l.strip().startswith("❯ ") and not re.match(r"^\s*❯\s*\d", l) and not re.match(r"^\s*❯\s*(Yes|No)", l, re.I)), default=-1)
-                    dl = dl[cut + 1:] if cut >= 0 and cut < len(dl) - 1 else dl
+                    dl = display(dtxt)
                     keep = []
                     for i, l in enumerate(dl):   # drop "Red" echoed under "1. Red"
                         prev = dl[i - 1] if i else ""
@@ -567,6 +545,7 @@ def main():
                     if k == "y":
                         ok, msg = ui["confirm"][2](); ui["confirm"] = None
                         flash(ui, ui["confirm_done"] if ok else f"✗ {msg}", ok)
+                        if ok and ui.get("expanded"): ui["expanded"] = False; act_zoom(False)
                     elif k in ("n", "esc"): ui["confirm"] = None; flash(ui, "cancelled", True, 1.0)
                     break
                 if ui.get("form") is not None:         # ---- new-task form
@@ -587,7 +566,8 @@ def main():
                     elif k == "tab": f["sel"] = (f["sel"] + 1) % len(f["cands"]); f["pinned"] = True
                     elif k == "bs": f["text"] = f["text"][:-1]
                     elif k == "kill": f["text"] = ""
-                    elif len(k) == 1 or k.isprintable(): f["text"] += k
+                    elif isinstance(k, tuple): f["text"] += k[1]
+                    elif len(k) == 1: f["text"] += k
                     if ui.get("form") and not f["pinned"]: f["sel"] = projects.preselect(f["text"], f["cands"], projects.read_last())
                     cols, rows = shutil.get_terminal_size((80, 24))
                     if ui.get("form"): sys.stdout.write(render_form(a, tr, subs, prev_t, cols, rows, ui)); sys.stdout.flush()
@@ -603,10 +583,16 @@ def main():
                     elif k == "esc": ui["reply"] = None; flash(ui, "cancelled", True, 1.0)
                     elif k == "bs": ui["reply"] = ui["reply"][:-1]
                     elif k == "kill": ui["reply"] = ""
-                    elif len(k) >= 1: ui["reply"] += k
+                    elif isinstance(k, tuple): ui["reply"] += k[1].replace("\n", " ")
+                    elif k == "alt-enter": ui["reply"] += " "
+                    elif len(k) == 1: ui["reply"] += k
                     cols, rows = shutil.get_terminal_size((80, 24))
                     sys.stdout.write((render_expanded if ui.get("expanded") else render)(a, tr, subs, prev_t, cols, rows, ui)); sys.stdout.flush()
                     deadline = time.time() + 0.25
+                elif isinstance(k, tuple):             # ---- a paste outside a text field: ignore it
+                    flash(ui, "paste ignored: press ⏎ or n first", False, 2); break
+                elif (k in ("e", "q", "esc")) and ui.get("expanded") and a is None:   # ---- unzoom an empty expanded card
+                    ui["expanded"] = False; act_zoom(False); break
                 elif k == "n" and not (st == "blocked" and shape in ("yes_no", "unknown")):   # ---- new task
                     open_form(ui, agents); break
                 elif a is None:
@@ -660,7 +646,7 @@ def main():
                         flash(ui, f"✓ picked {k}{clip(' · ' + label, 30) if label else ''}" if ok else f"✗ {msg}", ok)
                     break
     finally:
-        sys.stdout.write("\033[?25h\033[0m\n"); sys.stdout.flush()
+        sys.stdout.write(PASTE_OFF + "\033[?25h\033[0m\n"); sys.stdout.flush()
         for f in (f"/tmp/herdr-mc/claim-{os.getpid()}", f"/tmp/herdr-mc/card-{MY_PANE}"):
             try: os.remove(f)
             except Exception: pass

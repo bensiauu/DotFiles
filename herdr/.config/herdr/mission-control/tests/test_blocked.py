@@ -29,6 +29,27 @@ class Classify(unittest.TestCase):
 
     def test_dialog_lines_keep_tail(self): self.assertEqual(len(B.dialog_lines(self.rd("options"), keep=3)), 3)
 
+    def test_options_ignore_numbered_narrative_above(self):
+        shape, opts = B.classify(self.rd("options_narrative"))
+        self.assertEqual(shape, "options"); self.assertEqual(opts[0], "Red"); self.assertEqual(opts[-1], "Chat about this")
+        self.assertEqual(len(opts), 5)
+
+    def test_free_text_ignores_no_narrative_above(self):
+        self.assertEqual(B.classify(self.rd("free_text_narrative"))[0], "free_text")
+
+    def test_yes_no_options_exclude_narrative(self):
+        rows = B.yes_no_options(B.region(self.rd("yes_no_narrative")))
+        self.assertEqual([r[0][:3] for r in rows], ["No,", "Yes"]); self.assertEqual([r[1] for r in rows], [True, False])
+
+    def test_region_cuts_at_shell_prompt(self):
+        reg = B.region(self.rd("yes_no"))
+        self.assertFalse(any("❯ claude" in l for l in reg)); self.assertTrue(any("Accessing workspace" in l for l in reg))
+
+    def test_display_drops_narrative_keeps_question(self):
+        d = B.display(self.rd("options_narrative"))
+        self.assertFalse(any("Refactor the parser" in l for l in d)); self.assertTrue(any("colours" in l for l in d))
+        self.assertTrue(any(l.strip().startswith("❯ 1.") for l in d))
+
 
 if __name__ == "__main__":
     unittest.main()

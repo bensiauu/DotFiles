@@ -33,6 +33,13 @@ class Candidates(unittest.TestCase):
             c = P.candidates([], root, exists=lambda p: True)
             self.assertEqual(c[:2], ["/new", "/old"])
 
+    def test_cwd_found_past_first_record(self):
+        with tempfile.TemporaryDirectory() as root:
+            d = Path(root) / "-p"; d.mkdir()
+            (d / "x.jsonl").write_text(json.dumps({"type": "last-prompt"}) + "\n" + json.dumps({"type": "mode"}) + "\n"
+                                       + json.dumps({"type": "attachment", "cwd": "/found"}) + "\n")
+            self.assertEqual(P.candidates([], root, exists=lambda p: True)[0], "/found")
+
 
 class Preselect(unittest.TestCase):
     C = ["/h/work/acm", "/h/DotFiles", "/h"]

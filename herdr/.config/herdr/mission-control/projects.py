@@ -17,9 +17,14 @@ def _first_cwd(project_dir):
     files = sorted(glob.glob(os.path.join(project_dir, "*.jsonl")), key=os.path.getmtime, reverse=True)
     for f in files[:3]:
         try:
-            with open(f, "rb") as fh: first = json.loads(fh.readline() or b"{}")
-            cwd = first.get("cwd") if isinstance(first, dict) else None
-            if cwd: return cwd
+            with open(f, "rb") as fh:
+                for _ in range(50):           # the first records are often last-prompt/mode/queue-operation without cwd
+                    line = fh.readline()
+                    if not line: break
+                    try: rec = json.loads(line)
+                    except Exception: continue
+                    cwd = rec.get("cwd") if isinstance(rec, dict) else None
+                    if cwd: return cwd
         except Exception:
             continue
     return None

@@ -1,0 +1,10 @@
+ No changes were needed in the lexer, so I skipped it.
+ Yes, the tests pass now.
+─────────────────────────────────────────────────────────────────────────────
+ ☐ Cat name
+What should you name your cat?
+
+› Type your answer here…
+
+Enter to submit · Esc to cancel
+─────────────────────────────────────────────────────────────────────────────

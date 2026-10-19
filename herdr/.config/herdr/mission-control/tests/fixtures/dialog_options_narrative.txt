@@ -1,0 +1,35 @@
+ Here is my plan:
+ 1. Refactor the parser
+ 2. Add tests
+ 3. Update the README
+ No changes were needed in the lexer, so I skipped it.
+
+     Memory injection starts on your second session in a project.
+
+     `/learn-codebase` is available if the user wants to front-load the entire repo into memory in a single pass (~5 minutes on a typical repo,
+     optional). Otherwise memory builds passively as work happens.
+
+     Live activity: http://localhost:37700
+     How it works: `/how-it-works`
+
+     This message disappears once the first observation lands.
+
+     View Observations Live @ http://localhost:37700
+
+❯ Use the AskUserQuestion tool to ask me which of these 3 colours I prefer: red, green, blue. Do nothing else.
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ☐ Colour
+
+Which of these three colours do you prefer?
+
+❯ 1. Red
+     Red
+  2. Green
+     Green
+  3. Blue
+     Blue
+  4. Type something.
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  5. Chat about this
+
+Enter to select · ↑/↓ to navigate · Esc to cancel

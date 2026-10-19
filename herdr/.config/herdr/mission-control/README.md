@@ -26,7 +26,7 @@ lines beyond 1, ASKED's second line. A blocked card gives the dialog the whole b
 |---|---|---|
 | ⏎ | reply to this agent (type, Enter sends, Esc cancels); on a free-text prompt, answer it | same |
 | e | expand: zoom this card to the whole tab, read-only, still live | collapse |
-| Esc | cancel reply/form; when blocked, send Escape to the agent | collapse (when not typing) |
+| Esc | cancel reply/form; when blocked, send Escape to the agent | collapse (when not typing or blocked) |
 | g | go to the agent's own pane (works across workspaces) | same |
 | x | close this agent's session (asks y/n; warns if still working) | same |
 | n | new task: type the prompt, Tab picks the project, Enter launches | same |
@@ -62,7 +62,7 @@ indented, finished agents listed). Reply, go, close, and blocked keys work here 
 
 ## Start (n) and stop (x)
 
-`n` opens a form in the card body: a multi-line prompt box (Alt+Enter for a newline) and a
+`n` opens a form in the card body: a multi-line prompt box (Alt+Enter for a newline; a paste keeps its newlines) and a
 PROJECT row. Candidates are the cwds of running agents plus the 10 most recently used
 Claude projects (worktree paths collapse to the repo root). The project is auto-picked from
 words in your prompt (`acm`, `dotfiles`; `herdr`/`zsh`/`nvim`/`p10k`/`colorscheme` → DotFiles),
